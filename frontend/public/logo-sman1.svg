@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
+  <circle cx="80" cy="80" r="76" fill="#0F6A4A"/>
+  <circle cx="80" cy="80" r="68" fill="#F4E7B4"/>
+  <circle cx="80" cy="80" r="62" fill="#127A56"/>
+  <path d="M80 28c18 10 28 16 28 16v28c0 22-12 36-28 44-16-8-28-22-28-44V44s10-6 28-16Z" fill="#F8F3DC"/>
+  <path d="M80 36c14 8 22 12 22 12v24c0 18-10 29-22 35-12-6-22-17-22-35V48s8-4 22-12Z" fill="#1B8A62"/>
+  <circle cx="80" cy="62" r="10" fill="#F4C430"/>
+  <path d="M68 86h24v6H68zM72 96h16v18H72z" fill="#F4C430"/>
+  <text x="80" y="28" text-anchor="middle" fill="#F8F3DC" font-size="8" font-family="Arial, sans-serif" font-weight="700">SMA NEGERI 1</text>
+  <text x="80" y="146" text-anchor="middle" fill="#F8F3DC" font-size="8" font-family="Arial, sans-serif" font-weight="700">BOJONGGEDE</text>
+</svg>
