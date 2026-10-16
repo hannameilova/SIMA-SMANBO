@@ -24,7 +24,11 @@ const getAllLokasi = async (req, res) => {
 
 const createLokasi = async (req, res) => {
   try {
-    const { nama_lokasi, kategori } = req.body;
+    const {
+        nama_lokasi,
+        kategori,
+        kategori_lainnya,
+    } = req.body;
 
     if (!nama_lokasi) {
       return res.status(400).json({
@@ -32,9 +36,29 @@ const createLokasi = async (req, res) => {
       });
     }
 
+    const kategoriValid = [
+        "Ruang Kelas",
+        "Ruang Administrasi",
+        "Ruang Penunjang",
+        "Lainnya",
+    ];
+
+    if (!kategoriValid.includes(kategori)) {
+      return res.status(400).json({
+        message: "Kategori lokasi tidak valid.",
+      });
+    }
+
+    if (kategori === "Lainnya" && !kategori_lainnya) {
+      return res.status(400).json({
+        message: "Nama kategori lainnya wajib diisi.",
+      });
+    }
+
     const lokasi = await lokasiService.createLokasi(
-      nama_lokasi,
-      kategori
+        nama_lokasi,
+        kategori,
+        kategori === "Lainnya" ? kategori_lainnya : null
     );
 
     res.status(201).json({
@@ -53,7 +77,30 @@ const createLokasi = async (req, res) => {
 const updateLokasi = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nama_lokasi, kategori } = req.body;
+    const {
+        nama_lokasi,
+        kategori,
+        kategori_lainnya,
+    } = req.body;
+    
+    const kategoriValid = [
+        "Ruang Kelas",
+        "Ruang Administrasi",
+        "Ruang Penunjang",
+        "Lainnya",
+    ];
+
+    if (!kategoriValid.includes(kategori)) {
+      return res.status(400).json({
+        message: "Kategori lokasi tidak valid.",
+      });
+    }
+
+    if (kategori === "Lainnya" && !kategori_lainnya) {
+      return res.status(400).json({
+        message: "Nama kategori lainnya wajib diisi.",
+      });
+    }
 
     if (!nama_lokasi) {
       return res.status(400).json({
@@ -62,9 +109,10 @@ const updateLokasi = async (req, res) => {
     }
 
     const lokasi = await lokasiService.updateLokasi(
-      id,
-      nama_lokasi,
-      kategori
+        id,
+        nama_lokasi,
+        kategori,
+        kategori === "Lainnya" ? kategori_lainnya : null
     );
 
     if (!lokasi) {

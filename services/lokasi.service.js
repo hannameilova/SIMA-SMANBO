@@ -6,6 +6,7 @@ const getAllLokasi = async (search, kategori) => {
       id,
       nama_lokasi,
       kategori,
+      kategori_lainnya,
       created_at,
       updated_at
     FROM lokasi
@@ -35,30 +36,49 @@ const getAllLokasi = async (search, kategori) => {
   return lokasi;
 };
 
-const createLokasi = async (namaLokasi, kategori) => {
+const createLokasi = async (
+  namaLokasi,
+  kategori,
+  kategoriLainnya
+) => {
   const [result] = await db.query(
     `
-    INSERT INTO lokasi (nama_lokasi, kategori)
-    VALUES (?, ?)
+    INSERT INTO lokasi (nama_lokasi, kategori, kategori_lainnya)
+    VALUES (?, ?, ?)
     `,
-    [namaLokasi, kategori || null]
+    [
+      namaLokasi,
+      kategori,
+      kategoriLainnya || null,
+    ]
   );
 
   return {
     id: result.insertId,
     nama_lokasi: namaLokasi,
-    kategori: kategori || null,
+    kategori,
+    kategori_lainnya: kategoriLainnya || null,
   };
 };
 
-const updateLokasi = async (id, namaLokasi, kategori) => {
+const updateLokasi = async (
+  id,
+  namaLokasi,
+  kategori,
+  kategoriLainnya
+) => {
   const [result] = await db.query(
     `
     UPDATE lokasi
-    SET nama_lokasi = ?, kategori = ?
+    SET nama_lokasi = ?, kategori = ?, kategori_lainnya = ?
     WHERE id = ?
     `,
-    [namaLokasi, kategori || null, id]
+    [
+      namaLokasi,
+      kategori,
+      kategoriLainnya || null,
+      id,
+    ]
   );
 
   if (result.affectedRows === 0) {
@@ -68,7 +88,8 @@ const updateLokasi = async (id, namaLokasi, kategori) => {
   return {
     id: Number(id),
     nama_lokasi: namaLokasi,
-    kategori: kategori || null,
+    kategori,
+    kategori_lainnya: kategoriLainnya || null,
   };
 };
 
