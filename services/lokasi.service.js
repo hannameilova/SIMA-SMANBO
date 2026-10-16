@@ -1,8 +1,7 @@
 const db = require("../config/database");
 
-const getAllLokasi = async () => {
-  const [lokasi] = await db.query(
-    `
+const getAllLokasi = async (search, kategori) => {
+  let query = `
     SELECT
       id,
       nama_lokasi,
@@ -10,9 +9,28 @@ const getAllLokasi = async () => {
       created_at,
       updated_at
     FROM lokasi
-    ORDER BY nama_lokasi ASC
-    `
-  );
+  `;
+
+  const conditions = [];
+  const params = [];
+
+  if (search) {
+    conditions.push("nama_lokasi LIKE ?");
+    params.push(`%${search}%`);
+  }
+
+  if (kategori) {
+    conditions.push("kategori = ?");
+    params.push(kategori);
+  }
+
+  if (conditions.length > 0) {
+    query += " WHERE " + conditions.join(" AND ");
+  }
+
+  query += " ORDER BY nama_lokasi ASC";
+
+  const [lokasi] = await db.query(query, params);
 
   return lokasi;
 };

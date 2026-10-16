@@ -2,7 +2,12 @@ const lokasiService = require("../services/lokasi.service");
 
 const getAllLokasi = async (req, res) => {
   try {
-    const lokasi = await lokasiService.getAllLokasi();
+    const { search, kategori } = req.query;
+
+    const lokasi = await lokasiService.getAllLokasi(
+      search,
+      kategori
+    );
 
     res.status(200).json({
       message: "Data lokasi berhasil diambil.",
