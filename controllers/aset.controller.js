@@ -3,25 +3,50 @@ const asetService = require("../services/aset.service");
 const getAllAset = async (req, res) => {
   try {
     const {
-        search,
-        kategori,
-        lokasi
+      search,
+      kategori,
+      lokasi,
     } = req.query;
 
+    const kategoriValid = [
+      "habis_pakai",
+      "tidak_habis_pakai",
+    ];
+
+    // Filter kategori
+    if (kategori && !kategoriValid.includes(kategori)) {
+      return res.status(400).json({
+        message: "Kategori filter tidak valid.",
+      });
+    }
+
+    // Filter lokasi
+    let lokasiId = null;
+
+    if (lokasi !== undefined && lokasi !== "") {
+      lokasiId = Number(lokasi);
+
+      if (!Number.isInteger(lokasiId) || lokasiId <= 0) {
+        return res.status(400).json({
+          message: "ID lokasi filter tidak valid.",
+        });
+      }
+    }
+
     const aset = await asetService.getAllAset(
-        search,
-        kategori,
-        lokasi
+      search,
+      kategori,
+      lokasiId
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Data aset berhasil diambil.",
       data: aset,
     });
   } catch (error) {
     console.error("Get aset error:", error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Terjadi kesalahan pada server.",
     });
   }
