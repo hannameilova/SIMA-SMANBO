@@ -1,6 +1,8 @@
 const db = require("../config/database");
 
 const getAllAset = async (search, kategori, lokasiId) => {
+  const params = [];
+
   let query = `
     SELECT
       b.id_barang,
@@ -9,15 +11,26 @@ const getAllAset = async (search, kategori, lokasiId) => {
       b.kategori,
       COALESCE(SUM(sl.jumlah), 0) AS total_jumlah
     FROM barang b
+
     LEFT JOIN pengadaan_barang pb
       ON pb.id_barang = b.id_barang
+
     LEFT JOIN stok_lokasi sl
       ON sl.id_pengadaan = pb.id_pengadaan
   `;
 
-  const conditions = [];
-  const params = [];
+  // Filter lokasi
+  if (lokasiId) {
+    query += `
+      AND sl.id_lokasi = ?
+    `;
 
+    params.push(lokasiId);
+  }
+
+  const conditions = [];
+
+  // Filter pencarian
   if (search) {
     conditions.push(`
       (
@@ -27,17 +40,14 @@ const getAllAset = async (search, kategori, lokasiId) => {
     `);
 
     const keyword = `%${search}%`;
+
     params.push(keyword, keyword);
   }
 
+  // Filter kategori
   if (kategori) {
     conditions.push("b.kategori = ?");
     params.push(kategori);
-  }
-
-  if (lokasiId) {
-    conditions.push("sl.id_lokasi = ?");
-    params.push(lokasiId);
   }
 
   if (conditions.length > 0) {
@@ -52,12 +62,51 @@ const getAllAset = async (search, kategori, lokasiId) => {
       b.kode_barang,
       b.nama_barang,
       b.kategori
+  `;
+
+  if (lokasiId) {
+    query += `
+      HAVING SUM(sl.jumlah) > 0
+    `;
+  }
+
+  query += `
     ORDER BY b.nama_barang ASC
   `;
 
   const [aset] = await db.query(query, params);
 
   return aset;
+};
+
+const getAllLokasi = async () => {
+  const [lokasi] = await db.query(
+    `
+      SELECT
+        id,
+        nama_lokasi,
+        kategori,
+        kategori_lainnya
+      FROM lokasi
+      ORDER BY nama_lokasi ASC
+    `
+  );
+
+  return lokasi;
+};
+
+const getAllKategori = async () => {
+  const [kategori] = await db.query(
+    `
+      SELECT DISTINCT kategori
+      FROM barang
+      WHERE kategori IS NOT NULL
+        AND kategori <> ''
+      ORDER BY kategori ASC
+    `
+  );
+
+  return kategori;
 };
 
 const createAset = async ({
@@ -74,20 +123,20 @@ const createAset = async ({
 
     // Validasi lokasi
     const [lokasi] = await connection.query(
-    `
+      `
         SELECT id
         FROM lokasi
         WHERE id = ?
         LIMIT 1
-    `,
-    [id_lokasi]
+      `,
+      [id_lokasi]
     );
 
     if (lokasi.length === 0) {
-        throw new Error("Lokasi tidak ditemukan.");
+      throw new Error("Lokasi tidak ditemukan.");
     }
 
-    // 1. Validasi apakah nama barang sudah ada
+    // Validasi nama barang
     const [existingBarang] = await connection.query(
       `
         SELECT id_barang, kode_barang
@@ -104,7 +153,7 @@ const createAset = async ({
       );
     }
 
-    // 2. Generate kode barang
+    // Generate kode barang
     const [lastBarang] = await connection.query(
       `
         SELECT kode_barang
@@ -118,7 +167,10 @@ const createAset = async ({
 
     if (lastBarang.length > 0) {
       const lastCode = lastBarang[0].kode_barang;
-      const number = parseInt(lastCode.replace("BRG-", ""), 10);
+      const number = parseInt(
+        lastCode.replace("BRG-", ""),
+        10
+      );
 
       if (!isNaN(number)) {
         nextNumber = number + 1;
@@ -127,7 +179,7 @@ const createAset = async ({
 
     const kode_barang = `BRG-${String(nextNumber).padStart(3, "0")}`;
 
-    // 3. Buat master barang
+    // Buat master barang
     const [barangResult] = await connection.query(
       `
         INSERT INTO barang (
@@ -146,7 +198,7 @@ const createAset = async ({
 
     const id_barang = barangResult.insertId;
 
-    // 4. Buat data pengadaan
+    // Buat data pengadaan
     const [pengadaanResult] = await connection.query(
       `
         INSERT INTO pengadaan_barang (
@@ -163,7 +215,7 @@ const createAset = async ({
 
     const id_pengadaan = pengadaanResult.insertId;
 
-    // 5. Buat stok awal
+    // Buat stok awal
     await connection.query(
       `
         INSERT INTO stok_lokasi (
@@ -204,7 +256,6 @@ const createAset = async ({
 };
 
 const getAsetById = async (id) => {
-  // Ambil informasi dasar barang
   const [barang] = await db.query(
     `
       SELECT
@@ -223,7 +274,7 @@ const getAsetById = async (id) => {
     return null;
   }
 
-  // Ambil rincian pengadaan dan stok
+  // Rincian pengadaan dan stok
   const [rincian] = await db.query(
     `
       SELECT
@@ -248,7 +299,6 @@ const getAsetById = async (id) => {
     [id]
   );
 
-  // Hitung total jumlah
   const totalJumlah = rincian.reduce(
     (total, item) => total + Number(item.jumlah || 0),
     0
@@ -292,7 +342,6 @@ const getAsetById = async (id) => {
 };
 
 const updateAset = async (id, { nama_barang, kategori }) => {
-  // Pastikan aset ada
   const [existing] = await db.query(
     `
       SELECT id_barang
@@ -307,7 +356,7 @@ const updateAset = async (id, { nama_barang, kategori }) => {
     return null;
   }
 
-  // Cek apakah nama barang sudah digunakan barang lain
+  // Validasi nama barang
   const [duplicate] = await db.query(
     `
       SELECT id_barang
@@ -359,6 +408,8 @@ const updateAset = async (id, { nama_barang, kategori }) => {
 
 module.exports = {
   getAllAset,
+  getAllLokasi,
+  getAllKategori,
   getAsetById,
   createAset,
   updateAset,

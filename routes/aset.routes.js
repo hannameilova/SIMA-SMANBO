@@ -6,6 +6,12 @@ const router = express.Router();
 // Menampilkan daftar aset
 router.get("/", asetController.getAllAset);
 
+// Menampilkan daftar lokasi untuk filter
+router.get("/filter/lokasi", asetController.getAllLokasi);
+
+// Menampilkan daftar kategori untuk filter
+router.get("/filter/kategori", asetController.getAllKategori);
+
 // Menampilkan detail aset
 router.get("/:id", asetController.getAsetById);
 

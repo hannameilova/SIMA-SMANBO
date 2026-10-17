@@ -27,6 +27,40 @@ const getAllAset = async (req, res) => {
   }
 };
 
+const getAllLokasi = async (req, res) => {
+  try {
+    const lokasi = await asetService.getAllLokasi();
+
+    return res.status(200).json({
+      message: "Data lokasi berhasil diambil.",
+      data: lokasi,
+    });
+  } catch (error) {
+    console.error("Get lokasi filter error:", error.message);
+
+    return res.status(500).json({
+      message: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
+const getAllKategori = async (req, res) => {
+  try {
+    const kategori = await asetService.getAllKategori();
+
+    return res.status(200).json({
+      message: "Data kategori berhasil diambil.",
+      data: kategori,
+    });
+  } catch (error) {
+    console.error("Get kategori filter error:", error.message);
+
+    return res.status(500).json({
+      message: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
 const createAset = async (req, res) => {
   try {
     const {
@@ -202,6 +236,8 @@ const updateAset = async (req, res) => {
 
 module.exports = {
   getAllAset,
+  getAllLokasi,
+  getAllKategori,
   getAsetById,
   createAset,
   updateAset,
