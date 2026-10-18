@@ -6,9 +6,7 @@ const getAllLokasi = async (search, kategori) => {
       id,
       nama_lokasi,
       kategori,
-      kategori_lainnya,
-      created_at,
-      updated_at
+      kategori_lainnya
     FROM lokasi
   `;
 

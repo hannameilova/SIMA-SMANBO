@@ -6,6 +6,7 @@ const db = require("./config/database");
 
 const authRoutes = require("./routes/auth.routes");
 const lokasiRoutes = require("./routes/lokasi.routes");
+const asetRoutes = require("./routes/aset.routes");
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/auth", authRoutes);
 app.use("/lokasi", lokasiRoutes);
+app.use("/aset", asetRoutes);
 
 app.get("/", (req, res) => {
   res.json({
