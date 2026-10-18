@@ -159,10 +159,10 @@ export default function LoginPage() {
           <div className="mx-auto w-full max-w-sm">
             <div className="mb-6 flex flex-col items-center text-center">
               <Image
-                src="/logoSMANBO.png"
+                src="/logo-smanbo.png"
                 alt="Lambang SMA Negeri 1 Bojonggede"
-                width={86}
-                height={86}
+                width={90}
+                height={90}
                 priority
               />
               <h2 className="mt-4 text-lg font-bold text-[#1d4ed8]">

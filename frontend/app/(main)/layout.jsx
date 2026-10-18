@@ -174,7 +174,7 @@ export default function MainLayout({ children }) {
 
           <div className="min-w-0 flex-1">
             <p className="text-xs font-extrabold text-blue-700">
-              SIMA SMAN 1 BJGD
+              SIMA SMAN 1 Bojonggede
             </p>
             <p className="mt-1 text-[10px] text-slate-500">
               Sistem Manajemen Aset
