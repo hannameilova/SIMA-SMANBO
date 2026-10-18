@@ -9,9 +9,16 @@ import { isAuthenticated, isRemembered, saveSession } from "@/lib/auth";
 const FEATURES = [
   {
     title: "Stok Opname Digital",
-    description: "Catat data opname fisik per ruangan & stok langsung tervalidasi.",
+    description:
+      "Catat data opname fisik per ruangan & stok langsung tervalidasi.",
     icon: (
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
         <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
         <path d="M8 8h8M8 12h8M8 16h4" strokeLinecap="round" />
       </svg>
@@ -19,19 +26,37 @@ const FEATURES = [
   },
   {
     title: "Riwayat Aktivitas",
-    description: "Telusuri perubahan data dan aktivitas inventaris yang tercatat.",
+    description:
+      "Telusuri perubahan data dan aktivitas inventaris yang tercatat.",
     icon: (
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
         <circle cx="12" cy="12" r="8" />
-        <path d="M12 8v4l2.5 1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M12 8v4l2.5 1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     ),
   },
   {
     title: "Perpindahan dan Sirkulasi Aset",
-    description: "Catat perpindahan, peminjaman, dan pengembalian barang dalam satu sistem.",
+    description:
+      "Catat perpindahan, peminjaman, dan pengembalian barang dalam satu sistem.",
     icon: (
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
         <path d="M7 7h10l3 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" />
         <path d="M7 7V5a1 1 0 0 1 1-1h5" strokeLinecap="round" />
       </svg>
@@ -78,7 +103,7 @@ export default function LoginPage() {
           token: result.token,
           user: result.user,
         },
-        rememberDevice
+        rememberDevice,
       );
       router.replace("/dashboard");
     } catch (error) {
@@ -90,7 +115,7 @@ export default function LoginPage() {
 
   function handleForgotPassword() {
     setInfoMessage(
-      "Reset kata sandi belum tersedia di sistem. Hubungi admin Sarpras untuk bantuan akun."
+      "Reset kata sandi belum tersedia di sistem. Hubungi admin Sarpras untuk bantuan akun.",
     );
   }
 
@@ -105,7 +130,8 @@ export default function LoginPage() {
             </h1>
             <p className="mt-4 max-w-sm text-sm leading-6 text-blue-100">
               Platform terpadu untuk mengelola data inventaris, stok opname,
-              perpindahan aset, serta peminjaman dan pengembalian barang sekolah.
+              perpindahan aset, serta peminjaman dan pengembalian barang
+              sekolah.
             </p>
           </div>
 
@@ -148,13 +174,19 @@ export default function LoginPage() {
             </div>
 
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-slate-900">Masuk ke Akun Anda</h3>
+              <h3 className="text-xl font-bold text-slate-900">
+                Masuk ke Akun Anda
+              </h3>
               <p className="mt-1 text-sm text-slate-500">
                 Silakan masuk menggunakan username terdaftar.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+              autoComplete="on"
+            >
               <div>
                 <label
                   htmlFor="nip"
@@ -164,9 +196,18 @@ export default function LoginPage() {
                 </label>
                 <div className="relative">
                   <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    >
                       <circle cx="12" cy="8" r="3.2" />
-                      <path d="M5.5 19c1.2-3.2 3.6-4.8 6.5-4.8S17.8 15.8 19 19" strokeLinecap="round" />
+                      <path
+                        d="M5.5 19c1.2-3.2 3.6-4.8 6.5-4.8S17.8 15.8 19 19"
+                        strokeLinecap="round"
+                      />
                     </svg>
                   </span>
                   <input
@@ -214,15 +255,34 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"
-                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                    aria-label={
+                      showPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Tampilkan kata sandi"
+                    }
                   >
                     {showPassword ? (
-                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
                         <path d="M3 3l18 18" strokeLinecap="round" />
-                        <path d="M10.6 10.6A2 2 0 0 0 12 14a2 2 0 0 0 1.4-.6M9.9 5.1A10.8 10.8 0 0 1 12 5c5.2 0 9.5 3.4 11 8-.4 1.3-1.1 2.5-2 3.5M6.1 6.1C4.1 7.5 2.6 9.6 2 13c1.5 4.6 5.8 8 11 8 1.4 0 2.8-.2 4-.7" strokeLinecap="round" />
+                        <path
+                          d="M10.6 10.6A2 2 0 0 0 12 14a2 2 0 0 0 1.4-.6M9.9 5.1A10.8 10.8 0 0 1 12 5c5.2 0 9.5 3.4 11 8-.4 1.3-1.1 2.5-2 3.5M6.1 6.1C4.1 7.5 2.6 9.6 2 13c1.5 4.6 5.8 8 11 8 1.4 0 2.8-.2 4-.7"
+                          strokeLinecap="round"
+                        />
                       </svg>
                     ) : (
-                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
                         <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
@@ -242,7 +302,10 @@ export default function LoginPage() {
               </label>
 
               {errorMessage ? (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+                <p
+                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                  role="alert"
+                >
                   {errorMessage}
                 </p>
               ) : null}
