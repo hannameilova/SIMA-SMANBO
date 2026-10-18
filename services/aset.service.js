@@ -9,7 +9,8 @@ const getAllAset = async (search, kategori, lokasiId) => {
       b.kode_barang,
       b.nama_barang,
       b.kategori,
-      COALESCE(SUM(sl.jumlah), 0) AS total_jumlah
+      COALESCE(SUM(sl.jumlah), 0) AS total_jumlah,
+      COUNT(DISTINCT sl.id_lokasi) AS total_lokasi
     FROM barang b
 
     LEFT JOIN pengadaan_barang pb
