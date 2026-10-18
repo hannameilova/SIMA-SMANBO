@@ -5,7 +5,7 @@ async function createTuUser() {
   const nip = "198001012010011002";
   const nama = "Pengguna TU";
   const password = "tu123";
-  const role = "tu";
+  const role = "Tata Usaha";
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);

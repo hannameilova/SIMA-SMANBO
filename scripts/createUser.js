@@ -3,9 +3,9 @@ const db = require("../config/database");
 
 async function createUser() {
   const nip = "198001012010011001";
-  const nama = "Pengguna Sarpras";
+  const nama = "Daud Suwarno, S.Sn., M.Pd.";
   const password = "sima123";
-  const role = "sarpras";
+  const role = "Wakasek Sarpras";
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
