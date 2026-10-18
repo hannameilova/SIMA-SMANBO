@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLokasi, createLokasi, updateLokasi } from "@/lib/lokasi";
 import LocationDrawer from "@/components/LocationDrawer";
-import { Package, Plus, Search, Pencil, RefreshCw } from "lucide-react";
+import DataAsetPanel from "@/components/DataAsetPanel";
+import { formatAngka, MOCK_SUMMARY } from "@/lib/mockAset";
+import {
+  Building2,
+  ClipboardList,
+  Plus,
+  Search,
+  Pencil,
+  RefreshCw,
+} from "lucide-react";
 
 const KATEGORI = [
   "Ruang Kelas",
@@ -27,6 +36,8 @@ export default function MasterInventarisView() {
   const [drawerMode, setDrawerMode] = useState("create");
   const [selectedLokasi, setSelectedLokasi] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState("aset");
+  const [openCreateAsetSignal, setOpenCreateAsetSignal] = useState(0);
 
   const loadLokasi = useCallback(async () => {
     setLoading(true);
@@ -118,37 +129,72 @@ export default function MasterInventarisView() {
 
         <button
           type="button"
-          onClick={bukaTambah}
+          onClick={() => {
+            if (tab === "aset") {
+              setOpenCreateAsetSignal((value) => value + 1);
+              return;
+            }
+            bukaTambah();
+          }}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
         >
           <Plus size={16} />
-          Tambah Lokasi/Ruangan
+          {tab === "aset" ? "Tambah Aset" : "Tambah Lokasi/Ruangan"}
         </button>
       </div>
 
-      {/* PANEL DATA */}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        {/* TAB */}
-        <div className="flex gap-6 border-b border-slate-200 px-5">
-          <button
-            type="button"
-            disabled
-            className="border-b-2 border-transparent py-4 text-xs font-medium text-slate-400"
+      <div className="mb-5 flex gap-6 border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setTab("aset")}
+          className={`inline-flex items-center gap-2 border-b-2 py-3 text-xs font-semibold ${
+            tab === "aset"
+              ? "border-blue-600 text-blue-700"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <ClipboardList size={15} />
+          Data Aset
+          <span
+            className={`rounded px-2 py-0.5 text-[10px] ${
+              tab === "aset"
+                ? "bg-blue-50 text-blue-700"
+                : "bg-slate-100 text-slate-500"
+            }`}
           >
-            Data Inventaris
-            <span className="ml-2 rounded bg-slate-100 px-2 py-1">Segera</span>
-          </button>
+            {formatAngka(MOCK_SUMMARY.totalJenis)}
+          </span>
+        </button>
 
-          <button
-            type="button"
-            className="border-b-2 border-blue-600 py-4 text-xs font-semibold text-blue-700"
+        <button
+          type="button"
+          onClick={() => setTab("lokasi")}
+          className={`inline-flex items-center gap-2 border-b-2 py-3 text-xs font-semibold ${
+            tab === "lokasi"
+              ? "border-blue-600 text-blue-700"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <Building2 size={15} />
+          Data Lokasi/Ruangan
+          <span
+            className={`rounded px-2 py-0.5 text-[10px] ${
+              tab === "lokasi"
+                ? "bg-blue-50 text-blue-700"
+                : "bg-slate-100 text-slate-500"
+            }`}
           >
-            Data Lokasi/Ruangan
-            <span className="ml-2 rounded bg-blue-50 px-2 py-1">
-              {lokasi.length}
-            </span>
-          </button>
-        </div>
+            {lokasi.length}
+          </span>
+        </button>
+      </div>
+
+      {tab === "aset" && (
+        <DataAsetPanel openCreateSignal={openCreateAsetSignal} />
+      )}
+
+      {tab === "lokasi" && (
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
         {/* FILTER */}
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 md:flex-row">
@@ -371,6 +417,7 @@ export default function MasterInventarisView() {
           </div>
         </footer>
       </section>
+      )}
 
       {/* DRAWER TAMBAH / EDIT */}
       <LocationDrawer
