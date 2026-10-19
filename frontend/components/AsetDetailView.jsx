@@ -2,13 +2,10 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Building2, Info } from "lucide-react";
-import {
-  formatAngka,
-  getMockAsetById,
-  groupLokasiPengadaan,
-  labelKategori,
-} from "@/lib/mockAset";
+import { apiRequest } from "@/lib/api";
+import { formatAngka, groupLokasiPengadaan, labelKategori } from "@/lib/aset";
 
 const KONDISI_STYLE = {
   baik: "bg-emerald-50 text-emerald-700",
@@ -30,17 +27,69 @@ const KONDISI_DOT = {
 
 export default function AsetDetailView() {
   const params = useParams();
-  const aset = getMockAsetById(params?.id);
+  const id = params?.id;
+  const [aset, setAset] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
 
-  if (!aset) {
+  useEffect(() => {
+    if (!id) return;
+
+    const controller = new AbortController();
+
+    async function loadAset() {
+      try {
+        const response = await apiRequest(`/aset/${id}`, {
+          signal: controller.signal,
+        });
+        setAset(response.data || null);
+        setError("");
+      } catch (requestError) {
+        if (!controller.signal.aborted) {
+          setAset(null);
+          setError(requestError.message || "Gagal memuat detail aset.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+
+    loadAset();
+    return () => controller.abort();
+  }, [id, retry]);
+
+  if (loading) {
     return (
       <div className="mx-auto w-full max-w-[1500px] p-4 md:p-8">
-        <p className="text-sm font-semibold text-slate-800">
-          Data aset tidak ditemukan.
+        <p role="status" className="text-sm text-slate-500">
+          Memuat detail aset...
         </p>
+      </div>
+    );
+  }
+
+  if (error || !aset) {
+    return (
+      <div className="mx-auto w-full max-w-[1500px] p-4 md:p-8">
+        <p role="alert" className="text-sm font-semibold text-slate-800">
+          {error || "Data aset tidak ditemukan."}
+        </p>
+        {error && (
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              setRetry((value) => value + 1);
+            }}
+            className="mt-3 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Coba lagi
+          </button>
+        )}
         <Link
           href="/master-inventaris"
-          className="mt-3 inline-block text-xs font-semibold text-blue-600"
+          className="mt-3 block text-xs font-semibold text-blue-600"
         >
           Kembali ke Master Inventaris
         </Link>
@@ -49,6 +98,26 @@ export default function AsetDetailView() {
   }
 
   const satuan = aset.satuan || "Unit";
+  const stok = (aset.pengadaan || []).flatMap((item) => item.lokasi || []);
+  const totalAktif = stok.reduce(
+    (total, item) =>
+      total + (item.status_penggunaan === "aktif" ? Number(item.jumlah || 0) : 0),
+    0,
+  );
+  const totalNonaktif = stok.reduce(
+    (total, item) =>
+      total + (item.status_penggunaan === "nonaktif" ? Number(item.jumlah || 0) : 0),
+    0,
+  );
+  const ringkasanKondisi = stok.reduce(
+    (summary, item) => {
+      if (summary[item.kondisi] !== undefined) {
+        summary[item.kondisi] += Number(item.jumlah || 0);
+      }
+      return summary;
+    },
+    { baik: 0, rusak_ringan: 0, rusak_berat: 0 },
+  );
 
   return (
     <div className="mx-auto w-full max-w-[1500px] p-4 md:p-8">
@@ -94,18 +163,18 @@ export default function AsetDetailView() {
         </div>
         <div className="border-slate-100 px-4 sm:border-l">
           <p className="text-[10px] font-semibold tracking-wider text-emerald-600/80">
-            TERSEDIA
+            STOK AKTIF
           </p>
           <p className="mt-2 text-2xl font-bold text-emerald-600">
-            {aset.tersedia} {satuan}
+            {formatAngka(totalAktif)} {satuan}
           </p>
         </div>
         <div className="border-slate-100 px-4 sm:border-l">
           <p className="text-[10px] font-semibold tracking-wider text-blue-600/80">
-            DIPINJAM
+            STOK NONAKTIF
           </p>
           <p className="mt-2 text-2xl font-bold text-blue-600">
-            {aset.dipinjam} {satuan}
+            {formatAngka(totalNonaktif)} {satuan}
           </p>
         </div>
       </div>
@@ -118,7 +187,7 @@ export default function AsetDetailView() {
               BAIK
             </p>
             <p className="mt-3 text-3xl font-bold text-slate-900">
-              {formatAngka(aset.ringkasanKondisi.baik)}
+              {formatAngka(ringkasanKondisi.baik)}
               <span className="ml-1 text-sm font-medium text-slate-400">
                 {satuan}
               </span>
@@ -129,7 +198,7 @@ export default function AsetDetailView() {
               RUSAK RINGAN
             </p>
             <p className="mt-3 text-3xl font-bold text-amber-500">
-              {formatAngka(aset.ringkasanKondisi.rusak_ringan)}
+              {formatAngka(ringkasanKondisi.rusak_ringan)}
               <span className="ml-1 text-sm font-medium text-slate-400">
                 {satuan}
               </span>
@@ -140,7 +209,7 @@ export default function AsetDetailView() {
               RUSAK BERAT
             </p>
             <p className="mt-3 text-3xl font-bold text-rose-500">
-              {formatAngka(aset.ringkasanKondisi.rusak_berat)}
+              {formatAngka(ringkasanKondisi.rusak_berat)}
               <span className="ml-1 text-sm font-medium text-slate-400">
                 {satuan}
               </span>

@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLokasi, createLokasi, updateLokasi } from "@/lib/lokasi";
+import { apiRequest } from "@/lib/api";
 import LocationDrawer from "@/components/LocationDrawer";
 import DataAsetPanel from "@/components/DataAsetPanel";
-import { formatAngka, MOCK_SUMMARY } from "@/lib/mockAset";
+import { formatAngka } from "@/lib/aset";
 import {
   Building2,
   ClipboardList,
@@ -38,6 +39,7 @@ export default function MasterInventarisView() {
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState("aset");
   const [openCreateAsetSignal, setOpenCreateAsetSignal] = useState(0);
+  const [summaryAset, setSummaryAset] = useState(null);
 
   const loadLokasi = useCallback(async () => {
     setLoading(true);
@@ -56,6 +58,18 @@ export default function MasterInventarisView() {
   useEffect(() => {
     loadLokasi();
   }, [loadLokasi]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    apiRequest("/aset/summary", { signal: controller.signal })
+      .then((response) => setSummaryAset(response.data || null))
+      .catch(() => {
+        if (!controller.signal.aborted) setSummaryAset(null);
+      });
+
+    return () => controller.abort();
+  }, []);
 
   const totalPages = Math.max(1, Math.ceil(lokasi.length / pageSize));
 
@@ -162,7 +176,7 @@ export default function MasterInventarisView() {
                 : "bg-slate-100 text-slate-500"
             }`}
           >
-            {formatAngka(MOCK_SUMMARY.totalJenis)}
+            {summaryAset ? formatAngka(summaryAset.total_jenis_barang) : "—"}
           </span>
         </button>
 
@@ -190,7 +204,15 @@ export default function MasterInventarisView() {
       </div>
 
       {tab === "aset" && (
-        <DataAsetPanel openCreateSignal={openCreateAsetSignal} />
+        <DataAsetPanel
+          openCreateSignal={openCreateAsetSignal}
+          summary={summaryAset}
+          onAsetChanged={() => {
+            apiRequest("/aset/summary")
+              .then((response) => setSummaryAset(response.data || null))
+              .catch(() => setSummaryAset(null));
+          }}
+        />
       )}
 
       {tab === "lokasi" && (

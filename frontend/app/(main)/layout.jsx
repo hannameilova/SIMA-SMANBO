@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isAuthenticated, getUser, clearSession } from "@/lib/auth";
@@ -71,7 +72,7 @@ const NAVIGASI = [
   },
 ];
 
-export default function MainLayout({ children }) {
+function MainLayoutContent({ children }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -265,5 +266,19 @@ export default function MainLayout({ children }) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MainLayout({ children }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
+          Memeriksa sesi login...
+        </div>
+      }
+    >
+      <MainLayoutContent>{children}</MainLayoutContent>
+    </Suspense>
   );
 }

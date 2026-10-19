@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { labelKategori } from "@/lib/mockAset";
+import { labelKategori } from "@/lib/aset";
 
 const KATEGORI_OPTIONS = [
   { value: "tidak_habis_pakai", label: "Tidak Habis Pakai" },
