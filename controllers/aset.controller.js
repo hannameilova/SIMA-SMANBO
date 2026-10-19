@@ -1,5 +1,39 @@
 const asetService = require("../services/aset.service");
 
+const normalizeNamaBarang = (value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  return value.trim().replace(/\s+/g, " ");
+};
+
+const validateNamaBarang = (value) => {
+  if (typeof value !== "string") {
+    return "Nama aset harus berupa teks.";
+  }
+
+  const nama = normalizeNamaBarang(value);
+
+  if (!nama) {
+    return "Nama aset wajib diisi.";
+  }
+
+  if ([...nama].length < 2) {
+    return "Nama aset minimal 2 karakter.";
+  }
+
+  if (!/\p{L}/u.test(nama)) {
+    return "Nama aset harus mengandung setidaknya satu huruf.";
+  }
+
+  if (!/^[\p{L}\p{N} .,\/&()+-]+$/u.test(nama)) {
+    return "Nama aset mengandung karakter yang tidak diperbolehkan.";
+  }
+
+  return null;
+};
+
 const getAllAset = async (req, res) => {
   try {
     const {
@@ -52,6 +86,23 @@ const getAllAset = async (req, res) => {
   }
 };
 
+const getSummaryAset = async (req, res) => {
+  try {
+    const summary = await asetService.getSummaryAset();
+
+    return res.status(200).json({
+      message: "Summary aset berhasil diambil.",
+      data: summary,
+    });
+  } catch (error) {
+    console.error("Get summary aset error:", error.message);
+
+    return res.status(500).json({
+      message: "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
 const getAllLokasi = async (req, res) => {
   try {
     const lokasi = await asetService.getAllLokasi();
@@ -97,12 +148,13 @@ const createAset = async (req, res) => {
     } = req.body;
 
     // Validasi nama barang
-    if (!nama_barang || !nama_barang.trim()) {
+    const errorNama = validateNamaBarang(nama_barang);
+
+    if (errorNama) {
       return res.status(400).json({
-        message: "Nama barang wajib diisi.",
+        message: errorNama,
       });
     }
-
     // Validasi kategori
     const kategoriValid = [
       "habis_pakai",
@@ -152,7 +204,7 @@ const createAset = async (req, res) => {
     }
 
     const aset = await asetService.createAset({
-      nama_barang: nama_barang.trim(),
+      nama_barang: normalizeNamaBarang(nama_barang),
       kategori,
       tahun_pengadaan: tahun,
       id_lokasi: lokasiId,
@@ -216,9 +268,11 @@ const updateAset = async (req, res) => {
     const { nama_barang, kategori } = req.body;
 
     // Validasi nama barang
-    if (!nama_barang || !nama_barang.trim()) {
+    const errorNama = validateNamaBarang(nama_barang);
+
+    if (errorNama) {
       return res.status(400).json({
-        message: "Nama barang wajib diisi.",
+        message: errorNama,
       });
     }
 
@@ -236,7 +290,7 @@ const updateAset = async (req, res) => {
     }
 
     const aset = await asetService.updateAset(id, {
-      nama_barang: nama_barang.trim(),
+      nama_barang: normalizeNamaBarang(nama_barang),
       kategori,
     });
 
@@ -263,6 +317,7 @@ module.exports = {
   getAllAset,
   getAllLokasi,
   getAllKategori,
+  getSummaryAset,
   getAsetById,
   createAset,
   updateAset,

@@ -440,20 +440,6 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
         </footer>
       </section>
 
-      <aside className="mt-5 rounded-xl border border-blue-100 bg-blue-50/70 px-5 py-4 text-xs leading-6 text-slate-600">
-        <p className="flex items-center gap-2 font-semibold text-blue-700">
-          <ShieldCheck size={16} />
-          Prinsip Master Inventaris SMAN 1 Bojonggede
-        </p>
-        <p className="mt-1">
-          Jumlah dan kondisi fisik barang diperbarui secara resmi melalui modul
-          Stok Opname (BR-08) dan transaksi Perpindahan Aset. Fitur penghapusan
-          fisik secara permanen dinonaktifkan demi mempertahankan integritas
-          riwayat dan audit trail (DR-04). Barang yang tidak digunakan
-          diarsipkan melalui pengaturan status nonaktif.
-        </p>
-      </aside>
-
       <AssetDrawer
         open={drawerOpen}
         mode={drawerMode}

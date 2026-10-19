@@ -251,20 +251,18 @@ export default function AssetDrawer({
                   >
                     Tahun Pengadaan
                   </label>
-                  <select
+                  <input
+                    type="number"
                     id="tahun-pengadaan"
                     value={tahun}
                     onChange={(event) => setTahun(event.target.value)}
+                    placeholder="Contoh: 2025"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                    step="1"
                     required
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value="">Pilih Tahun Pengadaan</option>
-                    {tahunOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="mt-5">
