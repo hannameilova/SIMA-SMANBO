@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AirVent,
@@ -16,15 +16,8 @@ import {
   Table2,
 } from "lucide-react";
 import AssetDrawer from "@/components/AssetDrawer";
-import {
-  MOCK_LOKASI_FILTER,
-  MOCK_SUMMARY,
-  createMockAset,
-  filterMockAset,
-  formatAngka,
-  labelKategori,
-  updateMockAset,
-} from "@/lib/mockAset";
+import { apiRequest } from "@/lib/api";
+import { formatAngka, labelKategori } from "@/lib/aset";
 
 const IKON_MAP = {
   projector: Presentation,
@@ -66,8 +59,14 @@ function pageNumbers(current, total) {
   return items;
 }
 
-export default function DataAsetPanel({ openCreateSignal = 0 }) {
-  const [versi, setVersi] = useState(0);
+export default function DataAsetPanel({
+  openCreateSignal = 0,
+  summary = null,
+  onAsetChanged,
+}) {
+  const [aset, setAset] = useState([]);
+  const [lokasiOptions, setLokasiOptions] = useState([]);
+  const [kategoriOptions, setKategoriOptions] = useState([]);
   const [search, setSearch] = useState("");
   const [lokasi, setLokasi] = useState("");
   const [kategori, setKategori] = useState("");
@@ -78,6 +77,11 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
   const [drawerMode, setDrawerMode] = useState("create");
   const [selectedAset, setSelectedAset] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState("");
+  const [lokasiError, setLokasiError] = useState("");
+  const [kategoriError, setKategoriError] = useState("");
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     if (openCreateSignal > 0) {
@@ -88,26 +92,103 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
     }
   }, [openCreateSignal]);
 
-  const filtered = useMemo(() => {
-    void versi;
-    return filterMockAset({ search, kategori, lokasi });
-  }, [search, kategori, lokasi, versi]);
+  useEffect(() => {
+    const controller = new AbortController();
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    async function loadAset() {
+      const query = new URLSearchParams();
+      if (search.trim()) query.set("search", search.trim());
+      if (kategori) query.set("kategori", kategori);
+      if (lokasi) query.set("lokasi", lokasi);
+
+      try {
+        const response = await apiRequest(
+          `/aset${query.size ? `?${query.toString()}` : ""}`,
+          { signal: controller.signal },
+        );
+        setAset(Array.isArray(response.data) ? response.data : []);
+        setListError("");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setAset([]);
+          setListError(error.message || "Gagal memuat data aset.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+
+    loadAset();
+    return () => controller.abort();
+  }, [search, kategori, lokasi, refreshVersion]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadLokasi() {
+      try {
+        const response = await apiRequest("/aset/filter/lokasi", {
+          signal: controller.signal,
+        });
+        setLokasiOptions(Array.isArray(response.data) ? response.data : []);
+        setLokasiError("");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setLokasiError(error.message || "Gagal memuat daftar lokasi.");
+        }
+      }
+    }
+
+    loadLokasi();
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadKategori() {
+      try {
+        const response = await apiRequest("/aset/filter/kategori", {
+          signal: controller.signal,
+        });
+        setKategoriOptions(
+          Array.isArray(response.data)
+            ? response.data.map((item) => item.kategori)
+            : [],
+        );
+        setKategoriError("");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setKategoriError(error.message || "Gagal memuat kategori aset.");
+        }
+      }
+    }
+
+    loadKategori();
+    return () => controller.abort();
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(aset.length / pageSize));
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const dataHalaman = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const awal = filtered.length === 0 ? 0 : (page - 1) * pageSize + 1;
-  const akhir = Math.min(page * pageSize, filtered.length);
+  const dataHalaman = aset.slice((page - 1) * pageSize, page * pageSize);
+  const awal = aset.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const akhir = Math.min(page * pageSize, aset.length);
+
+  function mulaiMemuatFilter() {
+    setPage(1);
+    setLoading(true);
+    setListError("");
+  }
 
   function resetFilter() {
     setSearch("");
     setLokasi("");
     setKategori("");
-    setPage(1);
+    mulaiMemuatFilter();
   }
 
   function bukaEdit(item) {
@@ -117,21 +198,28 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
     setDrawerOpen(true);
   }
 
-  function simpanAset(payload) {
+  async function simpanAset(payload) {
     setSaving(true);
     setNotice("");
 
     try {
-      if (drawerMode === "edit") {
-        updateMockAset(selectedAset.id_barang, payload);
-        setNotice("Data aset berhasil diperbarui.");
-      } else {
-        createMockAset(payload);
-        setNotice("Aset berhasil ditambahkan.");
-        setPage(1);
-      }
+      const isEdit = drawerMode === "edit";
+      const response = await apiRequest(
+        isEdit ? `/aset/${selectedAset.id_barang}` : "/aset",
+        {
+          method: isEdit ? "PATCH" : "POST",
+          body: JSON.stringify(payload),
+        },
+      );
+      setNotice(
+        response.message ||
+          (isEdit ? "Data aset berhasil diperbarui." : "Aset berhasil ditambahkan."),
+      );
+      setPage(1);
+      setLoading(true);
+      setRefreshVersion((value) => value + 1);
+      onAsetChanged?.();
 
-      setVersi((value) => value + 1);
       setDrawerOpen(false);
       setSelectedAset(null);
     } catch (err) {
@@ -149,7 +237,7 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
             TOTAL JENIS BARANG
           </p>
           <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
-            {formatAngka(MOCK_SUMMARY.totalJenis)}
+            {summary ? formatAngka(summary.total_jenis_barang) : "—"}
           </p>
           <p className="mt-2 text-[11px] text-slate-500">
             Kategori Habis &amp; Tidak Habis Pakai
@@ -161,13 +249,13 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
             TOTAL UNIT FISIK
           </p>
           <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
-            {formatAngka(MOCK_SUMMARY.totalUnit)}
+            {summary ? formatAngka(summary.total_unit_fisik) : "—"}
             <span className="ml-1 text-sm font-medium text-slate-400">Unit</span>
           </p>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
             Tersebar di seluruh area sekolah
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-              {MOCK_SUMMARY.totalRuangan} Ruangan
+              {summary ? `${formatAngka(summary.total_ruangan)} Ruangan` : "—"}
             </span>
           </p>
         </article>
@@ -178,17 +266,17 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
           </p>
           <div className="mt-3 flex items-end justify-between gap-3">
             <p className="text-3xl font-bold tracking-tight text-emerald-600">
-              {formatAngka(MOCK_SUMMARY.kondisiBaik)}
+              {summary ? formatAngka(summary.total_kondisi_baik) : "—"}
               <span className="ml-1 text-sm font-medium text-slate-400">Unit</span>
             </p>
             <p className="mb-1 text-xs font-semibold text-slate-500">
-              {MOCK_SUMMARY.persenLayak}% Layak
+              {summary ? `${summary.persentase_layak}% Layak` : "—"}
             </p>
           </div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
             <div
               className="h-full rounded-full bg-emerald-500"
-              style={{ width: `${MOCK_SUMMARY.persenLayak}%` }}
+              style={{ width: `${summary?.persentase_layak || 0}%` }}
             />
           </div>
         </article>
@@ -198,15 +286,15 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
             PERLU PERBAIKAN
           </p>
           <p className="mt-3 text-3xl font-bold tracking-tight text-orange-500">
-            {formatAngka(MOCK_SUMMARY.perluPerbaikan)}
+            {summary ? formatAngka(summary.total_perlu_perbaikan) : "—"}
             <span className="ml-1 text-sm font-medium text-slate-400">Unit</span>
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-              {MOCK_SUMMARY.rusakRingan} Rusak Ringan
+              {summary ? `${formatAngka(summary.total_rusak_ringan)} Rusak Ringan` : "—"}
             </span>
             <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
-              {MOCK_SUMMARY.rusakBerat} Rusak Berat
+              {summary ? `${formatAngka(summary.total_rusak_berat)} Rusak Berat` : "—"}
             </span>
           </div>
         </article>
@@ -220,6 +308,8 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
             onChange={(event) => {
               setSearch(event.target.value);
               setPage(1);
+              setLoading(true);
+              setListError("");
             }}
             placeholder="Cari kode atau nama barang (misal: INF-PRJ, Laptop, Kursi)..."
             aria-label="Cari kode atau nama barang"
@@ -232,13 +322,18 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
           onChange={(event) => {
             setLokasi(event.target.value);
             setPage(1);
+            setLoading(true);
+            setListError("");
           }}
           aria-label="Filter lokasi"
           className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs outline-none focus:border-blue-500"
         >
           <option value="">Semua Lokasi</option>
-          <option value="1">Gudang Utama</option>
-          <option value="2">Ruang A Baru</option>
+          {lokasiOptions.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.nama_lokasi}
+            </option>
+          ))}
         </select>
 
         <select
@@ -246,13 +341,18 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
           onChange={(event) => {
             setKategori(event.target.value);
             setPage(1);
+            setLoading(true);
+            setListError("");
           }}
           aria-label="Filter kategori"
           className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs outline-none focus:border-blue-500"
         >
           <option value="">Semua Kategori</option>
-          <option value="tidak_habis_pakai">Tidak Habis Pakai</option>
-          <option value="habis_pakai">Habis Pakai</option>
+          {kategoriOptions.map((value) => (
+            <option key={value} value={value}>
+              {labelKategori(value)}
+            </option>
+          ))}
         </select>
 
         <button
@@ -263,6 +363,12 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
           Reset
         </button>
       </div>
+
+      {(lokasiError || kategoriError) && (
+        <p role="alert" className="mt-3 text-xs text-red-700">
+          {lokasiError || kategoriError}
+        </p>
+      )}
 
       {notice && (
         <div
@@ -296,7 +402,31 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
               </tr>
             </thead>
             <tbody>
-              {dataHalaman.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-16 text-center text-sm text-slate-500">
+                    Memuat data aset...
+                  </td>
+                </tr>
+              ) : listError ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center">
+                    <p role="alert" className="text-sm text-red-700">
+                      {listError}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoading(true);
+                        setRefreshVersion((value) => value + 1);
+                      }}
+                      className="mt-3 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Coba lagi
+                    </button>
+                  </td>
+                </tr>
+              ) : dataHalaman.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-16 text-center">
                     <p className="text-sm font-semibold text-slate-700">
@@ -336,7 +466,7 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
                           </span>
                       </td>
                       <td className="border-b border-slate-100 px-5 py-4 text-xs font-semibold text-slate-700">
-                        {item.total_jumlah} {item.satuan}
+                        {item.total_jumlah} {item.satuan || "Unit"}
                       </td>
                       <td className="border-b border-slate-100 px-5 py-4 text-xs text-slate-600">
                         {item.total_lokasi} Lokasi
@@ -387,7 +517,7 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
               ))}
             </select>
             <span>
-              Menampilkan {awal}-{akhir} dari {filtered.length} barang
+              Menampilkan {awal}-{akhir} dari {aset.length} barang
             </span>
           </div>
 
@@ -439,7 +569,7 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
         open={drawerOpen}
         mode={drawerMode}
         initialData={selectedAset}
-        lokasiOptions={MOCK_LOKASI_FILTER}
+        lokasiOptions={lokasiOptions}
         saving={saving}
         onClose={() => {
           if (saving) return;
