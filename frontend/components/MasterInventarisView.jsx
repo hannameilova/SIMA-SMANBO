@@ -205,6 +205,7 @@ export default function MasterInventarisView() {
 
       {tab === "aset" && (
         <DataAsetPanel
+          setOpenCreateSignal={setOpenCreateAsetSignal}
           openCreateSignal={openCreateAsetSignal}
           summary={summaryAset}
           onAsetChanged={() => {
