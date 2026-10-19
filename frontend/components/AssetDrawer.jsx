@@ -66,6 +66,11 @@ export default function AssetDrawer({
       return;
     }
 
+    if (!/^[\p{L}\p{M}]+(?: [\p{L}\p{M}]+)*$/u.test(namaBarang)) {
+      setError("Nama barang hanya boleh berisi huruf dan spasi.");
+      return;
+    }
+
     if (!KATEGORI_OPTIONS.some((item) => item.value === kategori)) {
       setError("Silakan pilih kategori.");
       return;
@@ -206,13 +211,22 @@ export default function AssetDrawer({
                 <input
                   id="nama-barang"
                   autoFocus
+                  type="text"
                   value={nama}
-                  onChange={(event) => setNama(event.target.value)}
-                  placeholder="Contoh: Epson EB-X400 3LCD Projector"
+                  onChange={(event) => {
+                  const value = event.target.value
+                    .replace(/[^\p{L}\p{M}\s]/gu, "")
+                    .replace(/\s+/g, " ")
+                    .replace(/^\s+/, "");
+
+                  setNama(value);
+                  }}
+                  placeholder="Contoh: Proyektor Epson"
+                  maxLength={100}
                   required
                   className="w-full rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
-              </div>
+                </div>
 
               <div className="mt-5">
                 <label
