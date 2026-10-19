@@ -391,12 +391,12 @@ export default function DataAsetPanel({
       )}
 
       <section className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        {loadingAset && (
+        {loading && (
           <p className="py-3 text-sm text-slate-500 text-center">Memuat data aset...</p>
         )}
-        {errorAset && (
+        {listError && (
           <p className="py-3 text-sm text-red-600">
-            Gagal memuat data aset: {errorAset}
+            Gagal memuat data aset: {listError}
           </p>
         )}
 
