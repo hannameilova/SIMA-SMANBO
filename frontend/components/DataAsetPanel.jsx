@@ -237,13 +237,8 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
           className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs outline-none focus:border-blue-500"
         >
           <option value="">Semua Lokasi</option>
-          {MOCK_LOKASI_FILTER.map((item) => 
-            [1, 2].includes(item.id)
-          ).map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.nama_lokasi}
-            </option>
-          ))}
+          <option value="1">Gudang Utama</option>
+          <option value="2">Ruang A Baru</option>
         </select>
 
         <select
@@ -324,29 +319,21 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
                         <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold tracking-wide text-blue-700">
                           {item.kode_barang}
                         </span>
-                      </td>
+                      </td>                
                       <td className="border-b border-slate-100 px-5 py-4">
-                        <div className="flex items-center gap-3">
+                        <p className="text-xs font-semibold text-slate-800">
+                          {item.nama_barang}
+                        </p>
+                      </td>
+                      <td className="border-b border-slate-100 px-5 py-4">                        
                           <span
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${ikonClass}`}
-                          >
-                            <Ikon size={16} />
-                          </span>
-                          <p className="text-xs font-semibold text-slate-800">
-                            {item.nama_barang}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="border-b border-slate-100 px-5 py-4">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${
-                            habisPakai
+                            className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${habisPakai
                               ? "bg-fuchsia-50 text-fuchsia-700"
-                              : "bg-sky-50 text-sky-700"
-                          }`}
-                        >
-                          {labelKategori(item.kategori)}
-                        </span>
+                              : "bg-sky-50 text-sky-700"  
+                            }`}
+                          >
+                            {labelKategori(item.kategori)}
+                          </span>
                       </td>
                       <td className="border-b border-slate-100 px-5 py-4 text-xs font-semibold text-slate-700">
                         {item.total_jumlah} {item.satuan}
