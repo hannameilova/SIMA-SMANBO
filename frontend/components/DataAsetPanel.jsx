@@ -60,6 +60,7 @@ function pageNumbers(current, total) {
 }
 
 export default function DataAsetPanel({
+  setOpenCreateSignal,
   openCreateSignal = 0,
   summary = null,
   onAsetChanged,
@@ -575,6 +576,7 @@ export default function DataAsetPanel({
           if (saving) return;
           setDrawerOpen(false);
           setSelectedAset(null);
+          setOpenCreateSignal(0);
         }}
         onSave={simpanAset}
       />

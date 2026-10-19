@@ -141,7 +141,7 @@ export default function AssetDrawer({
             id="asset-drawer-title"
             className="text-base font-bold text-slate-900"
           >
-            {isEdit ? "Ubah Data Barang" : "Tambah Aset"}
+            {isEdit ? "Ubah Data Barang" : "Tambah Aset Baru"}
           </h2>
 
           <button

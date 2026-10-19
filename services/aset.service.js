@@ -415,6 +415,141 @@ const getAsetById = async (id) => {
   };
 };
 
+const createPengadaanAset = async (
+  idBarang,
+  { tahun_pengadaan, id_lokasi, jumlah }
+) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // Validasi aset
+    const [barang] = await connection.query(
+      `
+        SELECT
+          id_barang,
+          kode_barang,
+          nama_barang,
+          kategori
+        FROM barang
+        WHERE id_barang = ?
+        LIMIT 1
+        FOR UPDATE
+      `,
+      [idBarang]
+    );
+
+    if (barang.length === 0) {
+      const error = new Error("Aset tidak ditemukan.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Validasi lokasi
+    const [lokasi] = await connection.query(
+      `
+        SELECT id, nama_lokasi
+        FROM lokasi
+        WHERE id = ?
+        LIMIT 1
+      `,
+      [id_lokasi]
+    );
+
+    if (lokasi.length === 0) {
+      const error = new Error("Lokasi tidak ditemukan.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Cari pengadaan pada tahun yang dipilih
+    const [pengadaan] = await connection.query(
+      `
+        SELECT id_pengadaan
+        FROM pengadaan_barang
+        WHERE id_barang = ?
+          AND tahun_pengadaan = ?
+        LIMIT 1
+      `,
+      [idBarang, tahun_pengadaan]
+    );
+
+    let idPengadaan;
+
+    if (pengadaan.length > 0) {
+      idPengadaan = pengadaan[0].id_pengadaan;
+    } else {
+      // Buat pengadaan baru
+      const [pengadaanBaru] = await connection.query(
+        `
+          INSERT INTO pengadaan_barang (
+            id_barang,
+            tahun_pengadaan
+          )
+          VALUES (?, ?)
+        `,
+        [idBarang, tahun_pengadaan]
+      );
+
+      idPengadaan = pengadaanBaru.insertId;
+    }
+
+    // Tambahkan stok pada lokasi yang dipilih
+    await connection.query(
+      `
+        INSERT INTO stok_lokasi (
+          id_pengadaan,
+          id_lokasi,
+          jumlah,
+          kondisi,
+          status_penggunaan
+        )
+        VALUES (?, ?, ?, 'baik', 'aktif')
+        ON DUPLICATE KEY UPDATE
+          jumlah = jumlah + VALUES(jumlah)
+      `,
+      [idPengadaan, id_lokasi, jumlah]
+    );
+
+    // Ambil jumlah stok terbaru
+    const [stok] = await connection.query(
+      `
+        SELECT id_stok, jumlah
+        FROM stok_lokasi
+        WHERE id_pengadaan = ?
+          AND id_lokasi = ?
+          AND kondisi = 'baik'
+          AND status_penggunaan = 'aktif'
+        LIMIT 1
+      `,
+      [idPengadaan, id_lokasi]
+    );
+
+    await connection.commit();
+
+    return {
+      id_barang: barang[0].id_barang,
+      kode_barang: barang[0].kode_barang,
+      nama_barang: barang[0].nama_barang,
+      kategori: barang[0].kategori,
+      id_pengadaan: idPengadaan,
+      tahun_pengadaan,
+      id_lokasi: lokasi[0].id,
+      nama_lokasi: lokasi[0].nama_lokasi,
+      jumlah_ditambahkan: Number(jumlah),
+      jumlah_stok_lokasi: Number(stok[0].jumlah),
+      kondisi: "baik",
+      status_penggunaan: "aktif",
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 const updateAset = async (id, { nama_barang, kategori }) => {
   const [existing] = await db.query(
     `
@@ -487,5 +622,6 @@ module.exports = {
   getSummaryAset,
   getAsetById,
   createAset,
+  createPengadaanAset,
   updateAset,
 };
