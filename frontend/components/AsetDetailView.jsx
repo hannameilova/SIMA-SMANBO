@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Building2, Info } from "lucide-react";
+import { Building2, Info, Plus } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { formatAngka, groupLokasiPengadaan, labelKategori } from "@/lib/aset";
 
@@ -33,6 +33,18 @@ export default function AsetDetailView() {
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
 
+  const [showTambahPengadaan, setShowTambahPengadaan] = useState(false);
+  const [daftarLokasi, setDaftarLokasi] = useState([]);
+  const [loadingLokasi, setLoadingLokasi] = useState(false);
+  const [savingPengadaan, setSavingPengadaan] = useState(false);
+  const [errorPengadaan, setErrorPengadaan] = useState("");
+
+  const [formPengadaan, setFormPengadaan] = useState({
+    tahun_pengadaan: String(new Date().getFullYear()),
+    id_lokasi: "",
+    jumlah: "",
+  });
+
   useEffect(() => {
     if (!id) return;
 
@@ -58,6 +70,86 @@ export default function AsetDetailView() {
     loadAset();
     return () => controller.abort();
   }, [id, retry]);
+
+  useEffect(() => {
+  if (!showTambahPengadaan) return;
+
+  const controller = new AbortController();
+
+  async function loadLokasi() {
+    setLoadingLokasi(true);
+    setErrorPengadaan("");
+
+    try {
+      const response = await apiRequest("/aset/filter/lokasi", {
+        signal: controller.signal,
+      });
+
+      setDaftarLokasi(response.data || []);
+    } catch (requestError) {
+      if (!controller.signal.aborted) {
+        setErrorPengadaan(
+          requestError.message || "Gagal memuat daftar lokasi."
+        );
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoadingLokasi(false);
+      }
+    }
+  }
+
+  loadLokasi();
+
+  return () => controller.abort();
+}, [showTambahPengadaan]);
+
+const handleTambahPengadaan = async (event) => {
+  event.preventDefault();
+
+  if (
+    !Number.isInteger(Number(formPengadaan.tahun_pengadaan)) ||
+    !formPengadaan.id_lokasi ||
+    !Number.isInteger(Number(formPengadaan.jumlah)) ||
+    Number(formPengadaan.jumlah) <= 0
+  ) {
+    setErrorPengadaan("Periksa kembali tahun, lokasi, dan jumlah pengadaan.");
+    return;
+  }
+
+  setSavingPengadaan(true);
+  setErrorPengadaan("");
+
+  try {
+    await apiRequest(`/aset/${id}/pengadaan`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        tahun_pengadaan: Number(formPengadaan.tahun_pengadaan),
+        id_lokasi: Number(formPengadaan.id_lokasi),
+        jumlah: Number(formPengadaan.jumlah),
+      }),
+    });
+
+    setShowTambahPengadaan(false);
+
+    setFormPengadaan({
+      tahun_pengadaan: String(new Date().getFullYear()),
+      id_lokasi: "",
+      jumlah: "",
+    });
+
+    setRetry((value) => value + 1);
+  } catch (requestError) {
+    setErrorPengadaan(
+      requestError.message || "Gagal mencatat pengadaan aset."
+    );
+  } finally {
+    setSavingPengadaan(false);
+  }
+  };
 
   if (loading) {
     return (
@@ -219,13 +311,24 @@ export default function AsetDetailView() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-base font-bold text-slate-900">
-          Rincian Tahun Pengadaan
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-900">
+            Rincian Tahun Pengadaan
+          </h2>
 
+          <button
+            type="button"
+            onClick={() => setShowTambahPengadaan(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            Tambah Pengadaan
+          </button>
+        </div>  
+    
         <div className="mt-5 space-y-8">
           {[...(aset.pengadaan || [])]
-            .sort((a, b) => a.tahun_pengadaan - b.tahun_pengadaan)
+            .sort((a, b) => Number(b.tahun_pengadaan) - Number(a.tahun_pengadaan))
             .map((pengadaan) => {
               const grouped = groupLokasiPengadaan(pengadaan.lokasi);
 
@@ -295,6 +398,167 @@ export default function AsetDetailView() {
             })}
         </div>
       </section>
+            {showTambahPengadaan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="judul-tambah-pengadaan"
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2
+                  id="judul-tambah-pengadaan"
+                  className="text-lg font-bold text-slate-900"
+                >
+                  Tambah Pengadaan
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  {aset.nama_barang} · {aset.kode_barang}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowTambahPengadaan(false)}
+                disabled={savingPengadaan}
+                className="rounded-lg px-3 py-1 text-xl text-slate-400 hover:bg-slate-100"
+                aria-label="Tutup formulir"
+              >
+                ×
+              </button>
+            </div>
+
+            {errorPengadaan && (
+              <p
+                role="alert"
+                className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700"
+              >
+                {errorPengadaan}
+              </p>
+            )}
+
+            <form
+              onSubmit={handleTambahPengadaan}
+              className="mt-5 space-y-4"
+            >
+              <div>
+                <label
+                  htmlFor="tahun-pengadaan"
+                  className="mb-1.5 block text-sm font-semibold text-slate-700"
+                >
+                  Tahun Pengadaan
+                </label>
+
+                <input
+                  id="tahun-pengadaan"
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  step="1"
+                  required
+                  value={formPengadaan.tahun_pengadaan}
+                  onChange={(event) =>
+                    setFormPengadaan((form) => ({
+                      ...form,
+                      tahun_pengadaan: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="lokasi-pengadaan"
+                  className="mb-1.5 block text-sm font-semibold text-slate-700"
+                >
+                  Lokasi/Ruangan
+                </label>
+
+                <select
+                  id="lokasi-pengadaan"
+                  required
+                  value={formPengadaan.id_lokasi}
+                  onChange={(event) =>
+                    setFormPengadaan((form) => ({
+                      ...form,
+                      id_lokasi: event.target.value,
+                    }))
+                  }
+                  disabled={loadingLokasi || daftarLokasi.length === 0}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50"
+                >
+                  <option value="">
+                    {loadingLokasi
+                      ? "Memuat lokasi..."
+                      : daftarLokasi.length === 0
+                        ? "Lokasi tidak tersedia"
+                        : "Pilih lokasi"}
+                  </option>
+
+                  {daftarLokasi.map((lokasi) => (
+                    <option key={lokasi.id} value={lokasi.id}>
+                      {lokasi.nama_lokasi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="jumlah-pengadaan"
+                  className="mb-1.5 block text-sm font-semibold text-slate-700"
+                >
+                  Jumlah Unit
+                </label>
+
+                <input
+                  id="jumlah-pengadaan"
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                  value={formPengadaan.jumlah}
+                  onChange={(event) =>
+                    setFormPengadaan((form) => ({
+                      ...form,
+                      jumlah: event.target.value,
+                    }))
+                  }
+                  placeholder="Masukkan jumlah unit"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowTambahPengadaan(false)}
+                  disabled={savingPengadaan}
+                  className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={
+                    savingPengadaan ||
+                    loadingLokasi ||
+                    daftarLokasi.length === 0
+                  }
+                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingPengadaan ? "Menyimpan..." : "Simpan Pengadaan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

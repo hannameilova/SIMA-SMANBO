@@ -24,4 +24,7 @@ router.post("/", asetController.createAset);
 // Mengedit nama dan kategori aset
 router.patch("/:id", asetController.updateAset);
 
+// Mencatat pengadaan pada aset yang sudah terdaftar
+router.post("/:id/pengadaan", asetController.createPengadaanAset);
+
 module.exports = router;

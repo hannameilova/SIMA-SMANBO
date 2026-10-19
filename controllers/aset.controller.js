@@ -313,6 +313,90 @@ const updateAset = async (req, res) => {
   }
 };
 
+const createPengadaanAset = async (req, res) => {
+  try {
+    const idBarang = Number(req.params.id);
+
+    if (!Number.isInteger(idBarang) || idBarang <= 0) {
+      return res.status(400).json({
+        message: "ID aset tidak valid.",
+      });
+    }
+
+    const {
+      tahun_pengadaan,
+      id_lokasi,
+      jumlah,
+    } = req.body;
+
+    const tahun = Number(tahun_pengadaan);
+    const lokasiId = Number(id_lokasi);
+    const jumlahBarang = Number(jumlah);
+    const tahunSekarang = new Date().getFullYear();
+
+    // Validasi tahun pengadaan
+    if (
+      tahun_pengadaan === undefined ||
+      tahun_pengadaan === null ||
+      !Number.isInteger(tahun) ||
+      tahun < 1900 ||
+      tahun > tahunSekarang
+    ) {
+      return res.status(400).json({
+        message: `Tahun pengadaan harus berupa tahun valid antara 1900 dan ${tahunSekarang}.`,
+      });
+    }
+
+    // Validasi lokasi
+    if (
+      id_lokasi === undefined ||
+      id_lokasi === null ||
+      id_lokasi === "" ||
+      !Number.isInteger(lokasiId) ||
+      lokasiId <= 0
+    ) {
+      return res.status(400).json({
+        message: "ID lokasi tidak valid.",
+      });
+    }
+
+    // Validasi jumlah
+    if (
+      jumlah === undefined ||
+      jumlah === null ||
+      !Number.isInteger(jumlahBarang) ||
+      jumlahBarang <= 0
+    ) {
+      return res.status(400).json({
+        message: "Jumlah harus berupa bilangan bulat lebih dari 0.",
+      });
+    }
+
+    const pengadaan = await asetService.createPengadaanAset(
+      idBarang,
+      {
+        tahun_pengadaan: tahun,
+        id_lokasi: lokasiId,
+        jumlah: jumlahBarang,
+      }
+    );
+
+    return res.status(201).json({
+      message: "Pengadaan aset berhasil dicatat.",
+      data: pengadaan,
+    });
+  } catch (error) {
+    console.error("Create pengadaan aset error:", error.message);
+
+    return res.status(error.statusCode || 500).json({
+      message:
+        error.statusCode
+          ? error.message
+          : "Terjadi kesalahan pada server.",
+    });
+  }
+};
+
 module.exports = {
   getAllAset,
   getAllLokasi,
@@ -321,4 +405,5 @@ module.exports = {
   getAsetById,
   createAset,
   updateAset,
+  createPengadaanAset,
 };

@@ -153,7 +153,7 @@ export default function MasterInventarisView() {
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
         >
           <Plus size={16} />
-          {tab === "aset" ? "Tambah Aset" : "Tambah Lokasi/Ruangan"}
+          {tab === "aset" ? "Tambah Aset Baru" : "Tambah Lokasi/Ruangan Baru"}
         </button>
       </div>
 
