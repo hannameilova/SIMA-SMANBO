@@ -12,6 +12,9 @@ router.get("/filter/lokasi", asetController.getAllLokasi);
 // Menampilkan daftar kategori untuk filter
 router.get("/filter/kategori", asetController.getAllKategori);
 
+// Menampilkan summary aset
+router.get("/summary", asetController.getSummaryAset);
+
 // Menampilkan detail aset
 router.get("/:id", asetController.getAsetById);
 

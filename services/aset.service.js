@@ -110,6 +110,79 @@ const getAllKategori = async () => {
   return kategori;
 };
 
+const getSummaryAset = async () => {
+  const [rows] = await db.query(`
+    SELECT
+      COUNT(
+        DISTINCT CASE
+          WHEN sl.id_stok IS NOT NULL THEN b.id_barang
+        END
+      ) AS total_jenis_barang,
+
+      COUNT(DISTINCT sl.id_lokasi) AS total_ruangan,
+
+      COALESCE(SUM(sl.jumlah), 0) AS total_unit_fisik,
+
+      COALESCE(
+        SUM(
+          CASE
+            WHEN sl.kondisi = 'baik' THEN sl.jumlah
+            ELSE 0
+          END
+        ),
+        0
+      ) AS total_kondisi_baik,
+
+      COALESCE(
+        SUM(
+          CASE
+            WHEN sl.kondisi = 'rusak_ringan' THEN sl.jumlah
+            ELSE 0
+          END
+        ),
+        0
+      ) AS total_rusak_ringan,
+
+      COALESCE(
+        SUM(
+          CASE
+            WHEN sl.kondisi = 'rusak_berat' THEN sl.jumlah
+            ELSE 0
+          END
+        ),
+        0
+      ) AS total_rusak_berat
+
+    FROM barang b
+    LEFT JOIN pengadaan_barang pb
+      ON pb.id_barang = b.id_barang
+    LEFT JOIN stok_lokasi sl
+      ON sl.id_pengadaan = pb.id_pengadaan
+      AND sl.status_penggunaan = 'aktif'
+  `);
+
+  const data = rows[0];
+
+  const totalUnitFisik = Number(data.total_unit_fisik);
+  const totalKondisiBaik = Number(data.total_kondisi_baik);
+  const totalRusakRingan = Number(data.total_rusak_ringan);
+  const totalRusakBerat = Number(data.total_rusak_berat);
+
+  return {
+    total_jenis_barang: Number(data.total_jenis_barang),
+    total_ruangan: Number(data.total_ruangan),
+    total_unit_fisik: totalUnitFisik,
+    total_kondisi_baik: totalKondisiBaik,
+    persentase_layak:
+      totalUnitFisik > 0
+        ? Math.round((totalKondisiBaik / totalUnitFisik) * 100)
+        : 0,
+    total_perlu_perbaikan: totalRusakRingan + totalRusakBerat,
+    total_rusak_ringan: totalRusakRingan,
+    total_rusak_berat: totalRusakBerat,
+  };
+};
+
 const createAset = async ({
   nama_barang,
   kategori,
@@ -411,6 +484,7 @@ module.exports = {
   getAllAset,
   getAllLokasi,
   getAllKategori,
+  getSummaryAset,
   getAsetById,
   createAset,
   updateAset,
