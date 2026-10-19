@@ -52,8 +52,8 @@ export default function LocationDrawer({
     const namaLokasi = nama.trim();
     const lainnya = kategoriLainnya.trim();
 
-    if (!namaLokasi) {
-      setError("Nama ruangan wajib diisi.");
+    if (namaLokasi.length < 2) {
+      setError("Nama ruangan minimal 2 karakter.");
       return;
     }
 
@@ -62,6 +62,10 @@ export default function LocationDrawer({
       return;
     }
 
+    if (!/^[\p{L}\p{M}]+(?: [\p{L}\p{M}]+)*$/u.test(namaLokasi)) {
+      setError("Nama ruangan hanya boleh berisi huruf dan spasi.");
+      return;
+    }
     if (!CATEGORIES.includes(kategori)) {
       setError("Silakan pilih kategori.");
       return;
@@ -132,11 +136,18 @@ export default function LocationDrawer({
 
               <input
                 id="nama-lokasi"
-                autoFocus
-                maxLength={150}
+                type="text"
                 value={nama}
-                onChange={(event) => setNama(event.target.value)}
-                placeholder="Contoh: Ruang Kelas XII IPA 1"
+                onChange={(event) => {
+                  const value = event.target.value
+                    .replace(/[^\p{L}\p{M}\s]/gu, "")
+                    .replace(/\s+/g, " ")
+                    .replace(/^\s+/, "");
+
+                  setNama(value);
+                }}
+                placeholder="Contoh: Laboratorium"
+                maxLength={150}
                 required
                 className="w-full rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
