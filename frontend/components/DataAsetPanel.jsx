@@ -237,7 +237,9 @@ export default function DataAsetPanel({ openCreateSignal = 0 }) {
           className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs outline-none focus:border-blue-500"
         >
           <option value="">Semua Lokasi</option>
-          {MOCK_LOKASI_FILTER.map((item) => (
+          {MOCK_LOKASI_FILTER.map((item) => 
+            [1, 2].includes(item.id)
+          ).map((item) => (
             <option key={item.id} value={item.id}>
               {item.nama_lokasi}
             </option>
