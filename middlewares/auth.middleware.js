@@ -25,6 +25,8 @@ const authenticate = (req, res, next) => {
 
     req.user = decoded;
 
+    console.log("AUTH USER:", req.user);
+
     next();
   } catch (error) {
     return res.status(401).json({
