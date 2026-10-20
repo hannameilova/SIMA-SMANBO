@@ -19,30 +19,6 @@ import AssetDrawer from "@/components/AssetDrawer";
 import { apiRequest } from "@/lib/api";
 import { formatAngka, labelKategori } from "@/lib/aset";
 
-const IKON_MAP = {
-  projector: Presentation,
-  pc: Monitor,
-  meja: Table2,
-  kursi: Armchair,
-  "meja-guru": Table2,
-  mikroskop: Microscope,
-  spidol: PenLine,
-  ac: AirVent,
-  lainnya: Presentation,
-};
-
-const IKON_STYLE = {
-  projector: "bg-blue-50 text-blue-600",
-  pc: "bg-sky-50 text-sky-600",
-  meja: "bg-amber-50 text-amber-600",
-  kursi: "bg-orange-50 text-orange-600",
-  "meja-guru": "bg-orange-50 text-orange-600",
-  mikroskop: "bg-emerald-50 text-emerald-600",
-  spidol: "bg-violet-50 text-violet-600",
-  ac: "bg-indigo-50 text-indigo-600",
-  lainnya: "bg-slate-100 text-slate-600",
-};
-
 function pageNumbers(current, total) {
   if (total <= 7) {
     return Array.from({ length: total }, (_, index) => index + 1);
@@ -169,15 +145,28 @@ export default function DataAsetPanel({
     return () => controller.abort();
   }, []);
 
-  const totalPages = Math.max(1, Math.ceil(aset.length / pageSize));
+const sortedAset = [...aset].sort((a, b) =>
+  a.kode_barang.localeCompare(b.kode_barang, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  })
+);
 
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+const totalPages = Math.max(1, Math.ceil(sortedAset.length / pageSize));
 
-  const dataHalaman = aset.slice((page - 1) * pageSize, page * pageSize);
-  const awal = aset.length === 0 ? 0 : (page - 1) * pageSize + 1;
-  const akhir = Math.min(page * pageSize, aset.length);
+useEffect(() => {
+  if (page > totalPages) setPage(totalPages);
+}, [page, totalPages]);
+
+const dataHalaman = sortedAset.slice(
+  (page - 1) * pageSize,
+  page * pageSize
+);
+
+const awal =
+  sortedAset.length === 0 ? 0 : (page - 1) * pageSize + 1;
+
+const akhir = Math.min(page * pageSize, sortedAset.length);
 
   function mulaiMemuatFilter() {
     setPage(1);
@@ -387,7 +376,7 @@ export default function DataAsetPanel({
               <tr>
                 {[
                   "KODE",
-                  "NAMA BARANG & SPESIFIKASI",
+                  "NAMA BARANG",
                   "KATEGORI",
                   "TOTAL JUMLAH",
                   "LOKASI / RUANGAN",
@@ -440,8 +429,6 @@ export default function DataAsetPanel({
                 </tr>
               ) : (
                 dataHalaman.map((item) => {
-                  const Ikon = IKON_MAP[item.ikon] || Presentation;
-                  const ikonClass = IKON_STYLE[item.ikon] || IKON_STYLE.lainnya;
                   const habisPakai = item.kategori === "habis_pakai";
 
                   return (
