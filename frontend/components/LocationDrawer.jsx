@@ -10,6 +10,33 @@ const CATEGORIES = [
   "Lainnya",
 ];
 
+function formatNama(value) {
+  return value
+    .toLowerCase()
+    .split(" ")
+    .map((word) => {
+      if (!word) return "";
+
+      return word
+        .split("-")
+        .map((part) => {
+          if (!part) return "";
+
+          if (/^[a-z]+\d+$/i.test(part)) {
+            return part.toUpperCase();
+          }
+
+          if (/^(i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv)$/i.test(part)) {
+            return part.toUpperCase();
+          }
+
+          return part.charAt(0).toUpperCase() + part.slice(1);
+        })
+        .join("-");
+    })
+    .join(" ");
+}
+
 export default function LocationDrawer({
   open,
   mode = "create",
@@ -49,7 +76,7 @@ export default function LocationDrawer({
     event.preventDefault();
     setError("");
 
-    const namaLokasi = nama.trim();
+    const namaLokasi = formatNama(nama.trim());
     const lainnya = kategoriLainnya.trim();
 
     if (namaLokasi.length < 2) {
@@ -62,10 +89,11 @@ export default function LocationDrawer({
       return;
     }
 
-    if (!/^[\p{L}\p{M}]+(?: [\p{L}\p{M}]+)*$/u.test(namaLokasi)) {
-      setError("Nama ruangan hanya boleh berisi huruf dan spasi.");
+    if (!/^[\p{L}][\p{L}\p{M}\p{N}\s-]*$/u.test(namaLokasi)) {
+      setError("Nama ruangan harus diawali huruf dan hanya boleh berisi huruf, angka, spasi, dan tanda strip (-).");
       return;
     }
+
     if (!CATEGORIES.includes(kategori)) {
       setError("Silakan pilih kategori.");
       return;
@@ -140,13 +168,14 @@ export default function LocationDrawer({
                 value={nama}
                 onChange={(event) => {
                   const value = event.target.value
-                    .replace(/[^\p{L}\p{M}\s]/gu, "")
+                    .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, "")
                     .replace(/\s+/g, " ")
                     .replace(/^\s+/, "");
 
                   setNama(value);
                 }}
-                placeholder="Contoh: Laboratorium"
+                placeholder="Contoh: XII Sains-2"
+                minLength={2}
                 maxLength={150}
                 required
                 className="w-full rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"

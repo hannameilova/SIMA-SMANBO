@@ -342,10 +342,6 @@ export default function MasterInventarisView() {
               <p className="text-xs font-semibold text-slate-800">
                 {item.nama_lokasi}
               </p>
-
-              <p className="mt-1 text-[10px] text-slate-400">
-                ID lokasi: {item.id}
-              </p>
             </td>
 
             {/* Kategori */}
