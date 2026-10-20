@@ -62,10 +62,11 @@ export default function LocationDrawer({
       return;
     }
 
-    if (!/^[\p{L}\p{M}]+(?: [\p{L}\p{M}]+)*$/u.test(namaLokasi)) {
-      setError("Nama ruangan hanya boleh berisi huruf dan spasi.");
+    if (!/^[\p{L}][\p{L}\p{M}\p{N}\s-]*$/u.test(namaLokasi)) {
+      setError("Nama ruangan harus diawali huruf dan hanya boleh berisi huruf, angka, spasi, dan tanda strip (-).");
       return;
     }
+
     if (!CATEGORIES.includes(kategori)) {
       setError("Silakan pilih kategori.");
       return;
@@ -140,13 +141,14 @@ export default function LocationDrawer({
                 value={nama}
                 onChange={(event) => {
                   const value = event.target.value
-                    .replace(/[^\p{L}\p{M}\s]/gu, "")
+                    .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, "")
                     .replace(/\s+/g, " ")
                     .replace(/^\s+/, "");
 
                   setNama(value);
                 }}
-                placeholder="Contoh: Laboratorium"
+                placeholder="Contoh: XII Sains-2"
+                minLength={2}
                 maxLength={150}
                 required
                 className="w-full rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
