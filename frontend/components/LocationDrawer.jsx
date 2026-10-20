@@ -10,6 +10,33 @@ const CATEGORIES = [
   "Lainnya",
 ];
 
+function formatNama(value) {
+  return value
+    .toLowerCase()
+    .split(" ")
+    .map((word) => {
+      if (!word) return "";
+
+      return word
+        .split("-")
+        .map((part) => {
+          if (!part) return "";
+
+          if (/^[a-z]+\d+$/i.test(part)) {
+            return part.toUpperCase();
+          }
+
+          if (/^(i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv)$/i.test(part)) {
+            return part.toUpperCase();
+          }
+
+          return part.charAt(0).toUpperCase() + part.slice(1);
+        })
+        .join("-");
+    })
+    .join(" ");
+}
+
 export default function LocationDrawer({
   open,
   mode = "create",
@@ -49,7 +76,7 @@ export default function LocationDrawer({
     event.preventDefault();
     setError("");
 
-    const namaLokasi = nama.trim();
+    const namaLokasi = formatNama(nama.trim());
     const lainnya = kategoriLainnya.trim();
 
     if (namaLokasi.length < 2) {

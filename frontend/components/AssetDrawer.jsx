@@ -8,6 +8,38 @@ const KATEGORI_OPTIONS = [
   { value: "habis_pakai", label: "Habis Pakai" },
 ];
 
+function formatNama(value) {
+  return value
+    .toLowerCase()
+    .split(" ")
+    .map((word) => {
+      if (!word) return "";
+
+      // Bagian sebelum tanda strip
+      return word
+        .split("-")
+        .map((part) => {
+          if (!part) return "";
+
+          // Jika terdiri dari angka + huruf seperti L120,
+          // huruf tetap uppercase
+          if (/^[a-z]+\d+$/i.test(part)) {
+            return part.toUpperCase();
+          }
+
+          // Jika berupa angka Romawi, pertahankan uppercase
+          if (/^(i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv)$/i.test(part)) {
+            return part.toUpperCase();
+          }
+
+          return part.charAt(0).toUpperCase() + part.slice(1);
+        })
+        .join("-");
+
+    })
+    .join(" ");
+}
+
 export default function AssetDrawer({
   open,
   mode = "create",
@@ -59,7 +91,7 @@ export default function AssetDrawer({
     event.preventDefault();
     setError("");
 
-    const namaBarang = nama.trim();
+    const namaBarang = formatNama(nama.trim());
 
     if (namaBarang.length < 2) {
       setError("Nama barang minimal 2 karakter.");
@@ -80,11 +112,6 @@ export default function AssetDrawer({
 
     if (!namaBarang) {
       setError("Nama barang wajib diisi.");
-      return;
-    }
-
-    if (!/^[\p{L}\p{M}]+(?: [\p{L}\p{M}]+)*$/u.test(namaBarang)) {
-      setError("Nama barang hanya boleh berisi huruf dan spasi.");
       return;
     }
 
@@ -232,7 +259,7 @@ export default function AssetDrawer({
                   value={nama}
                   onChange={(event) => {
                   const value = event.target.value
-                    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, "")
+                    .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, "")
                     .replace(/\s+/g, " ")
                     .replace(/^\s+/, "");
 
