@@ -61,6 +61,23 @@ export default function AssetDrawer({
 
     const namaBarang = nama.trim();
 
+    if (namaBarang.length < 2) {
+      setError("Nama barang minimal 2 karakter.");
+      return;
+    }
+
+    if (namaBarang.length > 150) {
+      setError("Nama barang maksimal 150 karakter.");
+      return;
+    }
+
+    if (!/^[\p{L}][\p{L}\p{M}\p{N}\s-]*$/u.test(namaBarang)) {
+      setError(
+        "Nama barang harus diawali huruf dan hanya boleh berisi huruf, angka, spasi, dan tanda strip (-)."
+      );
+      return;
+    }
+
     if (!namaBarang) {
       setError("Nama barang wajib diisi.");
       return;
@@ -215,13 +232,14 @@ export default function AssetDrawer({
                   value={nama}
                   onChange={(event) => {
                   const value = event.target.value
-                    .replace(/[^\p{L}\p{M}\s]/gu, "")
+                    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, "")
                     .replace(/\s+/g, " ")
                     .replace(/^\s+/, "");
 
                   setNama(value);
                   }}
-                  placeholder="Contoh: Proyektor Epson"
+                  placeholder="Contoh: Proyektor Epson EB-X600"
+                  minLength={2}
                   maxLength={100}
                   required
                   className="w-full rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
