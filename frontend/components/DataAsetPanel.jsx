@@ -1,7 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  getAset,
+  createAset,
+  updateAset,
+  getSummaryAset,
+} from "@/lib/aset";
+import { getLokasi } from "@/lib/lokasi";
 import {
   AirVent,
   Armchair,
@@ -83,6 +90,9 @@ export default function DataAsetPanel({
   const [lokasiError, setLokasiError] = useState("");
   const [kategoriError, setKategoriError] = useState("");
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [dataAset, setDataAset] = useState([]);
+  const [summaryAset, setSummaryAset] = useState(null);
+  const [dataLokasi, setDataLokasi] = useState([]);
 
   useEffect(() => {
     if (openCreateSignal > 0) {
@@ -202,7 +212,6 @@ export default function DataAsetPanel({
   async function simpanAset(payload) {
     setSaving(true);
     setNotice("");
-
     try {
       const isEdit = drawerMode === "edit";
       const response = await apiRequest(
@@ -224,6 +233,7 @@ export default function DataAsetPanel({
       setDrawerOpen(false);
       setSelectedAset(null);
     } catch (err) {
+      setNotice("");
       throw err;
     } finally {
       setSaving(false);
@@ -359,7 +369,7 @@ export default function DataAsetPanel({
         <button
           type="button"
           onClick={resetFilter}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-medium text-blue-600 transition-colors hover:border-blue-300 hover:bg-blue-100 hover:text-blue-700"
         >
           Reset
         </button>
@@ -381,6 +391,15 @@ export default function DataAsetPanel({
       )}
 
       <section className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        {loading && (
+          <p className="py-3 text-sm text-slate-500 text-center">Memuat data aset...</p>
+        )}
+        {listError && (
+          <p className="py-3 text-sm text-red-600">
+            Gagal memuat data aset: {listError}
+          </p>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] text-left">
             <thead className="bg-slate-50">

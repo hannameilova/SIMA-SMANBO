@@ -1,3 +1,5 @@
+import { apiRequest } from "./api";
+
 const KATEGORI_LABEL = {
   habis_pakai: "Habis Pakai",
   tidak_habis_pakai: "Tidak Habis Pakai",
@@ -34,4 +36,56 @@ export function groupLokasiPengadaan(lokasi = []) {
   }
 
   return Array.from(map.values());
+}
+
+export async function getAset({ search = "", kategori = "", lokasi = "" } = {}) {
+  const params = new URLSearchParams();
+  if (search.trim()) {
+    params.set("search", search.trim());
+  }
+  if (kategori) {
+    params.set("kategori", kategori);
+  }
+  if (lokasi !== "") {
+    params.set("lokasi", String(lokasi));
+  }
+
+  const query = params.toString();
+
+  const response = await apiRequest(`/aset?${query ? `?${query}` : ""}`, {
+    method: "GET",
+  });
+
+  return response.data.map((item) => ({
+    ...item,
+    total_jumlah: Number(item.total_jumlah ?? 0),
+    total_lokasi: Number(item.total_lokasi ?? 0),
+  }));
+}
+
+export async function getAsetById(id) {
+    return apiRequest(`/aset/${id}`, {
+      method: "GET",
+    });
+}
+
+export async function createAset({ nama_barang, kategori, lokasiId, jumlahBarang }) {
+  return apiRequest("/aset", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAset(id, payload) {
+    return apiRequest(`/aset/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+    });
+}
+
+export async function getSummaryAset() {
+  const response = await apiRequest("/aset/summary", {
+    method: "GET",
+  });
+    return response.data;
 }

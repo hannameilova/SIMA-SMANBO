@@ -1,8 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Building2, Info, Plus } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { formatAngka, groupLokasiPengadaan, labelKategori } from "@/lib/aset";
@@ -218,10 +218,6 @@ const handleTambahPengadaan = async (event) => {
         <span className="mx-1.5">›</span>
         <Link href="/master-inventaris" className="hover:text-slate-600">
           Master Inventaris
-        </Link>
-        <span className="mx-1.5">›</span>
-        <Link href="/master-inventaris" className="hover:text-slate-600">
-          Data Aset
         </Link>
         <span className="mx-1.5">›</span>
         <span className="font-semibold text-blue-600">Detail Aset</span>
