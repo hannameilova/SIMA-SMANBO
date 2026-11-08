@@ -1,3 +1,5 @@
+const { authenticate } = require("../middlewares/auth.middleware");
+const { authorize } = require("../middlewares/role.middleware");
 const express = require("express");
 const asetController = require("../controllers/aset.controller");
 
@@ -23,6 +25,14 @@ router.post("/", asetController.createAset);
 
 // Mengedit nama dan kategori aset
 router.patch("/:id", asetController.updateAset);
+
+// Menghapus aset secara permanen
+router.delete(
+  "/:id",
+  authenticate,
+  authorize("Wakasek Sarpras"),
+  asetController.deleteAset
+);
 
 // Mencatat pengadaan pada aset yang sudah terdaftar
 router.post("/:id/pengadaan", asetController.createPengadaanAset);

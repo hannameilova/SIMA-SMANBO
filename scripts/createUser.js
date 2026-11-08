@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const db = require("../config/database");
 
 async function createUser() {
-  const nip = "198001012010011001";
+  const nip = "121";
   const nama = "Daud Suwarno, S.Sn., M.Pd.";
   const password = "sima123";
   const role = "Wakasek Sarpras";

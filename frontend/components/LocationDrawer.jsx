@@ -180,10 +180,6 @@ export default function LocationDrawer({
                 required
                 className="w-full rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
-
-              <p className="mt-2 text-xs text-slate-500">
-                Nama ruangan harus unik per tahun ajaran.
-              </p>
             </div>
 
             <div>
@@ -231,11 +227,6 @@ export default function LocationDrawer({
                 />
               </div>
             )}
-
-            <p className="text-xs leading-5 text-slate-500">
-              Status dan jumlah barang belum tersedia pada API lokasi saat ini.
-              Informasi tersebut tidak akan diubah melalui form ini.
-            </p>
 
             {error && (
               <p

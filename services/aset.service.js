@@ -615,6 +615,129 @@ const updateAset = async (id, { nama_barang, kategori }) => {
   return updated[0];
 };
 
+async function deleteAset({
+  idBarang,
+  alasan,
+  keterangan,
+  nipPenghapus,
+}) {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // 1. Ambil data aset dan kunci baris selama transaksi
+    const [asetRows] = await connection.query(
+      `SELECT id_barang, kode_barang, nama_barang
+       FROM barang
+       WHERE id_barang = ?
+       FOR UPDATE`,
+      [idBarang]
+    );
+
+    if (asetRows.length === 0) {
+      const error = new Error("Data aset tidak ditemukan.");
+      error.code = "ASET_NOT_FOUND";
+      throw error;
+    }
+
+    const aset = asetRows[0];
+
+    // 2. Ambil identitas pengguna yang menghapus
+    const [userRows] = await connection.query(
+      `SELECT nip, nama
+       FROM users
+       WHERE nip = ? AND is_active = 1
+       LIMIT 1`,
+      [nipPenghapus]
+    );
+
+    if (userRows.length === 0) {
+      const error = new Error("Data pengguna tidak ditemukan.");
+      error.code = "USER_NOT_FOUND";
+      throw error;
+    }
+
+    const pengguna = userRows[0];
+
+    // 3. Simpan catatan penghapusan
+    await connection.query(
+      `INSERT INTO penghapusan_data (
+        jenis_data,
+        id_data_asal,
+        kode_data,
+        nama_data,
+        alasan,
+        keterangan,
+        nip_penghapus,
+        nama_penghapus
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "aset",
+        aset.id_barang,
+        aset.kode_barang,
+        aset.nama_barang,
+        alasan,
+        keterangan,
+        pengguna.nip,
+        pengguna.nama,
+      ]
+    );
+
+    // 4. Hapus stok lokasi milik aset
+    // Tidak ada lagi pemeriksaan jumlah harus 0.
+    await connection.query(
+      `DELETE sl
+       FROM stok_lokasi sl
+       INNER JOIN pengadaan_barang pb
+         ON pb.id_pengadaan = sl.id_pengadaan
+       WHERE pb.id_barang = ?`,
+      [idBarang]
+    );
+
+    // 5. Hapus data pengadaan aset
+    await connection.query(
+      `DELETE FROM pengadaan_barang
+       WHERE id_barang = ?`,
+      [idBarang]
+    );
+
+    // 6. Hapus data master barang
+    await connection.query(
+      `DELETE FROM barang
+       WHERE id_barang = ?`,
+      [idBarang]
+    );
+
+    await connection.commit();
+
+    return {
+      id_barang: aset.id_barang,
+      kode_barang: aset.kode_barang,
+      nama_barang: aset.nama_barang,
+    };
+  } catch (error) {
+    await connection.rollback();
+
+    // Data masih digunakan oleh tabel lain yang memiliki FK RESTRICT
+    if (
+      error.code === "ER_ROW_IS_REFERENCED_2" ||
+      error.code === "ER_ROW_IS_REFERENCED"
+    ) {
+      const conflictError = new Error(
+        "Aset tidak dapat dihapus karena masih memiliki keterkaitan dengan data lain atau riwayat transaksi."
+      );
+
+      conflictError.code = "ASET_HAS_REFERENCE";
+      throw conflictError;
+    }
+
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getAllAset,
   getAllLokasi,
@@ -624,4 +747,5 @@ module.exports = {
   createAset,
   createPengadaanAset,
   updateAset,
+  deleteAset,
 };
