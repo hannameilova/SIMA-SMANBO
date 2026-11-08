@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getLokasi, createLokasi, updateLokasi } from "@/lib/lokasi";
+import { getLokasi, createLokasi, updateLokasi, deleteLokasi } from "@/lib/lokasi";
 import { apiRequest } from "@/lib/api";
 import LocationDrawer from "@/components/LocationDrawer";
 import DataAsetPanel from "@/components/DataAsetPanel";
@@ -13,6 +13,9 @@ import {
   Search,
   Pencil,
   RefreshCw,
+  Trash2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 const KATEGORI = [
@@ -37,9 +40,34 @@ export default function MasterInventarisView() {
   const [drawerMode, setDrawerMode] = useState("create");
   const [selectedLokasi, setSelectedLokasi] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedDeleteLokasi, setSelectedDeleteLokasi] = useState(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteAlasan, setDeleteAlasan] = useState("kesalahan_input");
+  const [deleteKeterangan, setDeleteKeterangan] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
   const [tab, setTab] = useState("aset");
   const [openCreateAsetSignal, setOpenCreateAsetSignal] = useState(0);
   const [summaryAset, setSummaryAset] = useState(null);
+
+useEffect(() => {
+  const isAnyModalOpen = drawerOpen || deleteModalOpen;
+
+  if (!isAnyModalOpen) return;
+
+  const previousBodyOverflow = document.body.style.overflow;
+  const previousHtmlOverflow = document.documentElement.style.overflow;
+
+  document.body.style.overflow = "hidden";
+  document.documentElement.style.overflow = "hidden";
+
+  return () => {
+    document.body.style.overflow = previousBodyOverflow;
+    document.documentElement.style.overflow = previousHtmlOverflow;
+  };
+  }, [drawerOpen, deleteModalOpen]);
 
   const loadLokasi = useCallback(async () => {
     setLoading(true);
@@ -98,6 +126,26 @@ export default function MasterInventarisView() {
     setDrawerOpen(true);
   }
 
+  function bukaHapus(item) {
+  setSelectedDeleteLokasi(item);
+  setDeletePassword("");
+  setDeleteAlasan("kesalahan_input");
+  setDeleteKeterangan("");
+  setDeleteError("");
+  setShowDeletePassword(false);
+  setDeleteModalOpen(true);
+  }
+
+  function tutupHapus() {
+  if (deleting) return;
+
+  setDeleteModalOpen(false);
+  setSelectedDeleteLokasi(null);
+  setDeletePassword("");
+  setDeleteKeterangan("");
+  setDeleteError("");
+  }
+
   async function simpanLokasi(payload) {
     setSaving(true);
     setNotice("");
@@ -121,6 +169,43 @@ export default function MasterInventarisView() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function konfirmasiHapusLokasi(event) {
+  event.preventDefault();
+
+  if (!selectedDeleteLokasi) return;
+
+  setDeleting(true);
+  setDeleteError("");
+  setNotice("");
+  setError("");
+
+  try {
+    await deleteLokasi(selectedDeleteLokasi.id, {
+      password: deletePassword,
+      alasan: deleteAlasan,
+      keterangan: deleteKeterangan.trim(),
+    });
+
+    setDeleteModalOpen(false);
+    setSelectedDeleteLokasi(null);
+    setDeletePassword("");
+    setDeleteKeterangan("");
+
+    setNotice(
+      `Lokasi "${selectedDeleteLokasi.nama_lokasi}" berhasil dihapus.`
+    );
+
+    await loadLokasi();
+
+  } catch (err) {
+    setDeleteError(
+      err.message || "Gagal menghapus lokasi."
+    );
+  } finally {
+    setDeleting(false);
+  }
   }
 
   const awal = lokasi.length === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -297,7 +382,7 @@ export default function MasterInventarisView() {
         ].map((kolom) => (
           <th
             key={kolom}
-            className="border-b border-slate-200 px-5 py-4 text-[9px] font-bold tracking-wider text-slate-500"
+            className="border-b border-slate-200 px-5 py-4 text-center text-[9px] font-bold tracking-wider text-slate-500"
           >
             {kolom}
           </th>
@@ -338,14 +423,14 @@ export default function MasterInventarisView() {
         dataHalaman.map((item) => (
           <tr key={item.id} className="hover:bg-slate-50">
             {/* Nama lokasi */}
-            <td className="border-b border-slate-100 px-5 py-4">
+            <td className="border-b border-slate-100 px-5 py-4 text-center">
               <p className="text-xs font-semibold text-slate-800">
                 {item.nama_lokasi}
               </p>
             </td>
 
             {/* Kategori */}
-            <td className="border-b border-slate-100 px-5 py-4">
+            <td className="border-b border-slate-100 px-5 py-4 text-center">
               <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-medium text-blue-700">
                 {item.kategori === "Lainnya"
                   ? item.kategori_lainnya || "Lainnya"
@@ -354,7 +439,8 @@ export default function MasterInventarisView() {
             </td>
 
             {/* Aksi */}
-            <td className="border-b border-slate-100 px-5 py-4">
+            <td className="border-b border-slate-100 px-5 py-4 text-center">
+              <div className="flex items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={() => bukaEdit(item)}
@@ -363,6 +449,16 @@ export default function MasterInventarisView() {
                 <Pencil size={14} />
                 Edit
               </button>
+
+               <button
+                type="button"
+                onClick={() => bukaHapus(item)}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={14} />
+                Hapus
+              </button>
+              </div>
             </td>
           </tr>
         ))
@@ -451,6 +547,215 @@ export default function MasterInventarisView() {
         }}
         onSave={simpanLokasi}
       />
+
+      {/* MODAL HAPUS LOKASI */}
+      {deleteModalOpen && selectedDeleteLokasi && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-slate-950/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-location-title"
+            className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+          >
+        <form 
+          onSubmit={konfirmasiHapusLokasi}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+
+        {/* HEADER */}
+        <div className="shrink-0 border-b border-slate-200 px-6 py-5">
+          <div className="flex items-center justify-between">
+            <h2
+              id="delete-location-title"
+              className="text-base font-bold text-slate-900"
+            >
+              Hapus Lokasi/Ruangan
+            </h2>
+
+            <button
+              type="button"
+              onClick={tutupHapus}
+              disabled={deleting}
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+              aria-label="Tutup modal"
+            >
+              ✕
+            </button>
+          </div>
+
+          
+          {/* Peringatan */}
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p className="text-xs leading-5 text-amber-800">
+              Lokasi yang masih memiliki stok aset tidak dapat
+              dihapus. Penghapusan lokasi bersifat permanen.
+            </p>
+          </div>
+        </div>
+
+        {/* FORM */}
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
+          {/* Informasi lokasi */}
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Lokasi yang akan dihapus
+            </p>
+
+            <p className="mt-2 text-sm font-semibold text-slate-800">
+              {selectedDeleteLokasi.nama_lokasi}
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {selectedDeleteLokasi.kategori === "Lainnya"
+                ? selectedDeleteLokasi.kategori_lainnya || "Lainnya"
+                : selectedDeleteLokasi.kategori}
+            </p>
+          </div>
+
+          {/* Alasan */}
+          <div>
+            <label
+              htmlFor="delete-alasan"
+              className="mb-2 block text-xs font-semibold text-slate-700"
+            >
+              Alasan Penghapusan
+            </label>
+
+            <select
+              id="delete-alasan"
+              value={deleteAlasan}
+              onChange={(event) => {
+                setDeleteAlasan(event.target.value);
+                setDeleteError("");
+              }}
+              disabled={deleting}
+              required
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500"
+            >
+              <option value="kesalahan_input">
+                Kesalahan input
+              </option>
+              <option value="data_duplikat">
+                Data duplikat
+              </option>
+              <option value="lainnya">
+                Lainnya
+              </option>
+            </select>
+          </div>
+
+          {/* Keterangan */}
+          <div>
+            <label
+              htmlFor="delete-keterangan"
+              className="mb-2 block text-xs font-semibold text-slate-700"
+            >
+              Keterangan{" "}
+              {deleteAlasan === "lainnya" && (
+                <span className="text-red-500">*</span>
+              )}
+            </label>
+
+            <textarea
+              id="delete-keterangan"
+              value={deleteKeterangan}
+              onChange={(event) =>
+                setDeleteKeterangan(event.target.value)
+              }
+              disabled={deleting}
+              maxLength={500}
+              required={deleteAlasan === "lainnya"}
+              rows={3}
+              placeholder="Masukkan keterangan penghapusan..."
+              className="w-full resize-none rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500"
+            />
+
+            <p className="mt-1 text-right text-[10px] text-slate-400">
+              {deleteKeterangan.length}/500 karakter
+            </p>
+          </div>
+
+          {/* Password */}
+          <div>
+            <label
+              htmlFor="delete-password"
+              className="mb-2 block text-xs font-semibold text-slate-700"
+            >
+              Password Akun Wakasek Sarpras
+            </label>
+
+            <div className="relative">
+              <input
+                id="delete-password"
+                type={showDeletePassword ? "text" : "password"}
+                value={deletePassword}
+                onChange={(event) =>
+                  setDeletePassword(event.target.value)
+                }
+                disabled={deleting}
+                required
+                autoComplete="current-password"
+                placeholder="Masukkan password"
+                className="w-full rounded-lg border border-slate-200 px-3 py-3 pr-11 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowDeletePassword((value) => !value)
+                }
+                disabled={deleting}
+                aria-label={
+                  showDeletePassword
+                    ? "Sembunyikan password"
+                    : "Tampilkan password"
+                }
+                className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center justify-center text-slate-400 transition-colors hover:text-slate-700 disabled:opacity-50"
+              >
+                {showDeletePassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Error */}
+          {deleteError && (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700"
+            >
+              {deleteError}
+            </div>
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200 p-5">
+          <button
+            type="button"
+            onClick={tutupHapus}
+            disabled={deleting}
+            className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Batal
+          </button>
+
+          <button
+            type="submit"
+            disabled={deleting}
+            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
+          >
+            <Trash2 size={14} />
+            {deleting ? "Menghapus..." : "Hapus Lokasi"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 }

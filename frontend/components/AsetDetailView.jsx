@@ -338,13 +338,13 @@ const handleTambahPengadaan = async (event) => {
                     <table className="w-full text-left">
                       <thead className="bg-slate-50">
                         <tr>
-                          <th className="px-5 py-3 text-[10px] font-bold tracking-wider text-slate-500">
+                          <th className="px-5 py-3 text-[10px] font-bold tracking-wider text-slate-500 text-center">
                             NAMA RUANGAN
                           </th>
-                          <th className="px-5 py-3 text-[10px] font-bold tracking-wider text-slate-500">
+                          <th className="px-5 py-3 text-[10px] font-bold tracking-wider text-slate-500 text-center">
                             JUMLAH
                           </th>
-                          <th className="px-5 py-3 text-[10px] font-bold tracking-wider text-slate-500">
+                          <th className="px-5 py-3 text-[10px] font-bold tracking-wider text-slate-500 text-center">
                             KONDISI FISIK
                           </th>
                         </tr>
@@ -353,16 +353,16 @@ const handleTambahPengadaan = async (event) => {
                         {grouped.map((row) => (
                           <tr key={row.id_lokasi} className="border-t border-slate-100">
                             <td className="px-5 py-4">
-                              <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
-                                <Building2 size={16} className="text-slate-400" />
+                              <div className="flex items-center gap-2 text-sm font-medium text-slate-800 justify-center">
+                                <Building2 size={16} className="text-slate-400 " />
                                 {row.nama_lokasi}
                               </div>
                             </td>
-                            <td className="px-5 py-4 text-sm font-semibold text-slate-800">
+                            <td className="px-5 py-4 text-sm font-semibold text-slate-800 text-center">
                               {row.jumlah} {satuan}
                             </td>
                             <td className="px-5 py-4">
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-2 text-sm text-slate-700 justify-center">
                                 {Object.entries(row.kondisi)
                                   .filter(([, count]) => count > 0)
                                   .map(([kunci, count]) => (
