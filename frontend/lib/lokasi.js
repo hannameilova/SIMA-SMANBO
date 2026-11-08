@@ -40,6 +40,21 @@ export async function updateLokasi(id, payload) {
   });
 }
 
+export async function deleteLokasi(id, payload) {
+  if (!id) {
+    throw new Error("ID lokasi tidak valid.");
+  }
+
+  return apiRequest(`/lokasi/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      password: payload.password,
+      alasan: payload.alasan,
+      keterangan: payload.keterangan || null,
+    }),
+  });
+}
+
 function validateLokasi(payload) {
   const nama = String(payload.nama_lokasi || "").trim();
 

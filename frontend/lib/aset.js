@@ -83,6 +83,21 @@ export async function updateAset(id, payload) {
     });
 }
 
+export async function deleteAset(id, payload) {
+  if (!id) {
+    throw new Error("ID aset tidak valid.");
+  }
+
+  return apiRequest(`/aset/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      password: payload.password,
+      alasan: payload.alasan,
+      keterangan: payload.keterangan || null,
+    }),
+  });
+}
+
 export async function getSummaryAset() {
   const response = await apiRequest("/aset/summary", {
     method: "GET",

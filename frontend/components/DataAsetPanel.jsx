@@ -7,12 +7,14 @@ import {
   createAset,
   updateAset,
   getSummaryAset,
+  deleteAset,
 } from "@/lib/aset";
 import { getLokasi } from "@/lib/lokasi";
 import {
   AirVent,
   Armchair,
   Eye,
+  EyeOff,
   Microscope,
   Monitor,
   Pencil,
@@ -21,6 +23,7 @@ import {
   Search,
   ShieldCheck,
   Table2,
+  Trash2,
 } from "lucide-react";
 import AssetDrawer from "@/components/AssetDrawer";
 import { apiRequest } from "@/lib/api";
@@ -61,6 +64,14 @@ export default function DataAsetPanel({
   const [drawerMode, setDrawerMode] = useState("create");
   const [selectedAset, setSelectedAset] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedDeleteAset, setSelectedDeleteAset] = useState(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteAlasan, setDeleteAlasan] = useState("kesalahan_input");
+  const [deleteKeterangan, setDeleteKeterangan] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState("");
   const [lokasiError, setLokasiError] = useState("");
@@ -70,6 +81,23 @@ export default function DataAsetPanel({
   const [summaryAset, setSummaryAset] = useState(null);
   const [dataLokasi, setDataLokasi] = useState([]);
 
+  useEffect(() => {
+    const isAnyModalOpen = drawerOpen || deleteModalOpen;
+  
+    if (!isAnyModalOpen) return;
+  
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+  
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+  
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+    }, [drawerOpen, deleteModalOpen]);
+  
   useEffect(() => {
     if (openCreateSignal > 0) {
       setDrawerMode("create");
@@ -198,6 +226,26 @@ const akhir = Math.min(page * pageSize, sortedAset.length);
     setDrawerOpen(true);
   }
 
+  function bukaHapus(item) {
+  setSelectedDeleteAset(item);
+  setDeletePassword("");
+  setDeleteAlasan("kesalahan_input");
+  setDeleteKeterangan("");
+  setDeleteError("");
+  setShowDeletePassword(false);
+  setDeleteModalOpen(true);
+  }
+
+  function tutupHapus() {
+  if (deleting) return;
+
+  setDeleteModalOpen(false);
+  setSelectedDeleteAset(null);
+  setDeletePassword("");
+  setDeleteKeterangan("");
+  setDeleteError("");
+  }
+
   async function simpanAset(payload) {
     setSaving(true);
     setNotice("");
@@ -227,6 +275,50 @@ const akhir = Math.min(page * pageSize, sortedAset.length);
     } finally {
       setSaving(false);
     }
+  }
+
+  async function konfirmasiHapusAset(event) {
+  event.preventDefault();
+
+  if (!selectedDeleteAset) return;
+
+  setDeleting(true);
+  setDeleteError("");
+  setNotice("");
+  setListError("");
+
+  try {
+    const response = await deleteAset(
+      selectedDeleteAset.id_barang,
+      {
+        password: deletePassword,
+        alasan: deleteAlasan,
+        keterangan: deleteKeterangan.trim() || null,
+      }
+    );
+
+    setDeleteModalOpen(false);
+    setSelectedDeleteAset(null);
+    setDeletePassword("");
+    setDeleteKeterangan("");
+
+    setNotice(
+      response.message || "Data aset berhasil dihapus secara permanen."
+    );
+
+    // Perbarui daftar aset dan summary
+    setPage(1);
+    setLoading(true);
+    setRefreshVersion((value) => value + 1);
+    onAsetChanged?.();
+
+  } catch (err) {
+    setDeleteError(
+      err.message || "Gagal menghapus data aset."
+    );
+  } finally {
+    setDeleting(false);
+  }
   }
 
   return (
@@ -403,7 +495,7 @@ const akhir = Math.min(page * pageSize, sortedAset.length);
                 ].map((kolom) => (
                   <th
                     key={kolom}
-                    className="border-b border-slate-200 px-5 py-4 text-[9px] font-bold tracking-wider text-slate-500"
+                    className="border-b border-slate-200 px-5 py-4 text-center text-[9px] font-bold tracking-wider text-slate-500"
                   >
                     {kolom}
                   </th>
@@ -452,17 +544,17 @@ const akhir = Math.min(page * pageSize, sortedAset.length);
 
                   return (
                     <tr key={item.id_barang} className="hover:bg-slate-50">
-                      <td className="border-b border-slate-100 px-5 py-4">
+                      <td className="border-b border-slate-100 px-5 py-4 text-center">
                         <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold tracking-wide text-blue-700">
                           {item.kode_barang}
                         </span>
                       </td>                
-                      <td className="border-b border-slate-100 px-5 py-4">
+                      <td className="border-b border-slate-100 px-5 py-4 text-center">
                         <p className="text-xs font-semibold text-slate-800">
                           {item.nama_barang}
                         </p>
                       </td>
-                      <td className="border-b border-slate-100 px-5 py-4">                        
+                      <td className="border-b border-slate-100 px-5 py-4 text-center">                        
                           <span
                             className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${habisPakai
                               ? "bg-fuchsia-50 text-fuchsia-700"
@@ -472,28 +564,40 @@ const akhir = Math.min(page * pageSize, sortedAset.length);
                             {labelKategori(item.kategori)}
                           </span>
                       </td>
-                      <td className="border-b border-slate-100 px-5 py-4 text-xs font-semibold text-slate-700">
+                      <td className="border-b border-slate-100 px-5 py-4 text-xs font-semibold text-slate-700 text-center">
                         {item.total_jumlah} {item.satuan || "Unit"}
                       </td>
-                      <td className="border-b border-slate-100 px-5 py-4 text-xs text-slate-600">
+                      <td className="border-b border-slate-100 px-5 py-4 text-xs text-slate-600 text-center">
                         {item.total_lokasi} Lokasi
                       </td>
-                      <td className="border-b border-slate-100 px-5 py-4">
-                        <div className="flex items-center gap-2">
+                      <td className="border-b border-slate-100 px-5 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {/* Detail */}
                           <Link
                             href={`/master-inventaris/${item.id_barang}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-blue-600 hover:border-blue-200 hover:bg-blue-50"
+                            className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-blue-600"
                           >
                             <Eye size={14} />
-                            Detail
                           </Link>
+
+                          {/* Edit */}
                           <button
                             type="button"
                             onClick={() => bukaEdit(item)}
-                            aria-label={`Ubah ${item.nama_barang}`}
+                            aria-label={`Edit ${item.nama_barang}`}
                             className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-blue-600"
                           >
                             <Pencil size={15} />
+                          </button>
+
+                          {/* Hapus */}
+                          <button
+                            type="button"
+                            onClick={() => bukaHapus(item)}
+                            aria-label={`Hapus ${item.nama_barang}`}
+                            className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </td>
@@ -572,6 +676,229 @@ const akhir = Math.min(page * pageSize, sortedAset.length);
         </footer>
       </section>
 
+      {/* MODAL HAPUS ASET */}
+      {deleteModalOpen && selectedDeleteAset && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-slate-950/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-asset-title"
+            className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+          >
+            <form onSubmit={konfirmasiHapusAset} 
+            className="flex min-h-0 flex-1 flex-col"
+          >
+
+            {/* HEADER */}
+            <div className= "shrink-0 border-b border-slate-200 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <h2
+                  id="delete-asset-title"
+                  className="text-base font-bold text-slate-900"
+                >
+                  Hapus Aset
+                </h2>
+
+                <button
+                  type="button"
+                  onClick={tutupHapus}
+                  disabled={deleting}
+                  aria-label="Tutup modal"
+                  className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-xs leading-5 text-amber-800">
+                  Penghapusan aset bersifat permanen. Data stok lokasi
+                  dan pengadaan yang terkait juga akan dihapus.
+                </p>
+              </div>
+            </div>
+
+            {/* FORM */}
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-6">
+
+              {/* INFORMASI ASET */}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Aset yang akan dihapus
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-slate-800">   
+                  {selectedDeleteAset.nama_barang}
+                </p>
+
+                <dl className="mt-3 grid grid-cols-[105px_12px_minmax(0,1fr)] gap-y-2 text-xs text-slate-500">
+                  <dt>Kode Barang</dt>
+                  <span>:</span>
+                  <dd>{selectedDeleteAset.kode_barang}</dd>
+
+                  <dt>Kategori</dt>
+                  <span>:</span>
+                  <dd>{labelKategori(selectedDeleteAset.kategori)}</dd>
+
+                  <dt>Total Jumlah</dt>
+                  <span>:</span>
+                  <dd>
+                  {formatAngka(selectedDeleteAset.total_jumlah)} Unit
+                  </dd>
+
+                  <dt>Lokasi</dt>
+                  <span>:</span>
+                  <dd>
+                  {selectedDeleteAset.total_lokasi} Lokasi
+                  </dd>
+                </dl>
+              </div>
+
+            {/* ALASAN */}
+            <div>
+            <label
+              htmlFor="delete-aset-alasan"
+              className="mb-2 block text-xs font-semibold text-slate-700"
+            >
+              Alasan Penghapusan
+            </label>
+
+            <select
+              id="delete-aset-alasan"
+              value={deleteAlasan}
+              onChange={(event) => {
+                setDeleteAlasan(event.target.value);
+                setDeleteError("");
+              }}
+              disabled={deleting}
+              required
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500"
+            >
+              <option value="kesalahan_input">
+                Kesalahan input
+              </option>
+              <option value="data_duplikat">
+                Data duplikat
+              </option>
+              <option value="lainnya">
+                Lainnya
+              </option>
+            </select>
+          </div>
+
+          {/* KETERANGAN */}
+          <div>
+            <label
+              htmlFor="delete-aset-keterangan"
+              className="mb-2 block text-xs font-semibold text-slate-700"
+            >
+              Keterangan{" "}
+              {deleteAlasan === "lainnya" && (
+                <span className="text-red-500">*</span>
+              )}
+            </label>
+
+            <textarea
+              id="delete-aset-keterangan"
+              value={deleteKeterangan}
+              onChange={(event) =>
+                setDeleteKeterangan(event.target.value)
+              }
+              disabled={deleting}
+              required={deleteAlasan === "lainnya"}
+              maxLength={500}
+              rows={3}
+              placeholder="Masukkan keterangan penghapusan..."
+              className="w-full resize-none rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500"
+            />
+
+            <p className="mt-1 text-right text-[10px] text-slate-400">
+              {deleteKeterangan.length}/500 karakter
+            </p>
+          </div>
+
+          {/* PASSWORD */}
+          <div>
+            <label
+              htmlFor="delete-aset-password"
+              className="mb-2 block text-xs font-semibold text-slate-700"
+            >
+              Password Akun Wakasek Sarpras
+            </label>
+
+            <div className="relative">
+              <input
+                id="delete-aset-password"
+                type={showDeletePassword ? "text" : "password"}
+                value={deletePassword}
+                onChange={(event) =>
+                  setDeletePassword(event.target.value)
+                }
+                disabled={deleting}
+                required
+                autoComplete="current-password"
+                placeholder="Masukkan password"
+                className="w-full rounded-lg border border-slate-200 px-3 py-3 pr-11 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowDeletePassword((value) => !value)
+                }
+                disabled={deleting}
+                aria-label={
+                  showDeletePassword
+                    ? "Sembunyikan password"
+                    : "Tampilkan password"
+                }
+                className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-700"
+              >
+                {showDeletePassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* ERROR */}
+          {deleteError && (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700"
+            >
+              {deleteError}
+            </div>
+          )}
+
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200 p-5">
+          <button
+            type="button"
+            onClick={tutupHapus}
+            disabled={deleting}
+            className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Batal
+          </button>
+
+          <button
+            type="submit"
+            disabled={deleting}
+            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
+          >
+            <Trash2 size={14} />
+            {deleting ? "Menghapus..." : "Hapus Aset"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
       <AssetDrawer
         open={drawerOpen}
         mode={drawerMode}
