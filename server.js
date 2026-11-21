@@ -7,6 +7,7 @@ const db = require("./config/database");
 const authRoutes = require("./routes/auth.routes");
 const lokasiRoutes = require("./routes/lokasi.routes");
 const asetRoutes = require("./routes/aset.routes");
+const stokOpnameRoutes = require("./routes/stokOpname.routes");
 
 const { authenticate } = require("./middlewares/auth.middleware");
 const { authorize } = require("./middlewares/role.middleware");
@@ -25,6 +26,14 @@ app.use(
   authenticate,
   authorize("Wakasek Sarpras"),
   lokasiRoutes
+);
+
+// Modul Stok Opname hanya untuk Sarpras
+app.use(
+  "/stok-opname",
+  authenticate,
+  authorize("Wakasek Sarpras"),
+  stokOpnameRoutes
 );
 
 // Master aset hanya untuk Sarpras,
