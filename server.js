@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth.routes");
 const lokasiRoutes = require("./routes/lokasi.routes");
 const asetRoutes = require("./routes/aset.routes");
 const stokOpnameRoutes = require("./routes/stokOpname.routes");
+const perpindahanAsetRoutes = require("./routes/perpindahanAset.routes");
 
 const { authenticate } = require("./middlewares/auth.middleware");
 const { authorize } = require("./middlewares/role.middleware");
@@ -34,6 +35,14 @@ app.use(
   authenticate,
   authorize("Wakasek Sarpras"),
   stokOpnameRoutes
+);
+
+// Modul Perpindahan Aset hanya untuk Sarpras
+app.use(
+  "/perpindahan-aset",
+  authenticate,
+  authorize("Wakasek Sarpras"),
+  perpindahanAsetRoutes
 );
 
 // Master aset hanya untuk Sarpras,
