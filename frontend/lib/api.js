@@ -28,7 +28,11 @@ export async function apiRequest(path, options = {}) {
       ...options,
       headers,
     });
-  } catch {
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw error;
+    }
+
     throw new Error(
       "Tidak dapat terhubung ke server. Pastikan backend Express.js sedang berjalan."
     );
@@ -37,7 +41,10 @@ export async function apiRequest(path, options = {}) {
   const data = await parseJsonSafe(response);
 
   if (!response.ok) {
-    throw new Error(data.message || "Terjadi kesalahan pada server.");
+    const error = new Error(data.message || "Terjadi kesalahan pada server.");
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
 
   return data;

@@ -25,25 +25,27 @@ const getLokasi = async (req, res) => {
 };
 
 
+
 // Membuat sesi Stok Opname
 const createSesi = async (req, res) => {
   try {
-    const { id_lokasi } = req.body;
+    const idLokasi = Number(req.body?.id_lokasi);
 
     // Validasi ID lokasi
-    const idLokasi = Number(id_lokasi);
-
-    if (
-      !Number.isSafeInteger(idLokasi) ||
-      idLokasi <= 0
-    ) {
+    if (!Number.isSafeInteger(idLokasi) || idLokasi <= 0) {
       return res.status(400).json({
         message: "ID lokasi tidak valid.",
       });
     }
 
-    // Ambil NIP dari pengguna yang sudah login
-    const nipPengguna = req.user.nip;
+    // Validasi pengguna yang sedang login
+    const nipPengguna = req.user?.nip;
+
+    if (!nipPengguna) {
+      return res.status(401).json({
+        message: "Data pengguna yang login tidak valid.",
+      });
+    }
 
     const sesi = await stokOpnameService.createSesiStokOpname(
       idLokasi,
@@ -54,7 +56,6 @@ const createSesi = async (req, res) => {
       message: "Sesi Stok Opname berhasil dibuat.",
       data: sesi,
     });
-
   } catch (error) {
     console.error("Create sesi Stok Opname error:", error);
 
@@ -67,7 +68,7 @@ const createSesi = async (req, res) => {
     if (error.code === "LOKASI_HAS_ACTIVE_SESSION") {
       return res.status(409).json({
         message: error.message,
-        id_opname: error.idOpname
+        id_opname: error.idOpname,
       });
     }
 
@@ -88,7 +89,6 @@ const createSesi = async (req, res) => {
     });
   }
 };
-
 
 // Mengambil daftar barang dalam sesi Stok Opname
 const getBarangSesi = async (req, res) => {

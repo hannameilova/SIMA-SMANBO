@@ -9,6 +9,20 @@ const getLokasiUntukStokOpname = async (search, kategori) => {
       l.kategori,
       l.kategori_lainnya,
 
+      sesi_terakhir.id_opname AS id_opname,
+
+      CASE
+        WHEN sesi_terakhir.status IS NULL
+          THEN 'belum_diperiksa'
+        WHEN sesi_terakhir.status IN ('draft', 'berlangsung')
+          THEN 'berlangsung'
+        WHEN sesi_terakhir.status = 'selesai'
+          THEN 'selesai_opname'
+        ELSE 'belum_diperiksa'
+      END AS status_opname,
+
+      riwayat_opname.terakhir_opname AS terakhir_opname,
+
       COUNT(DISTINCT b.id_barang) AS jumlah_jenis_barang,
       COUNT(DISTINCT sl.id_stok) AS jumlah_data_stok,
       COALESCE(SUM(sl.jumlah), 0) AS total_unit
@@ -23,6 +37,35 @@ const getLokasiUntukStokOpname = async (search, kategori) => {
 
     INNER JOIN barang b
       ON b.id_barang = pb.id_barang
+
+    LEFT JOIN (
+      SELECT
+        so.id_opname,
+        so.id_lokasi,
+        so.status
+      FROM stok_opname so
+      INNER JOIN (
+        SELECT
+          id_lokasi,
+          MAX(id_opname) AS id_opname
+        FROM stok_opname
+        GROUP BY id_lokasi
+      ) terbaru
+        ON terbaru.id_opname = so.id_opname
+    ) sesi_terakhir
+      ON sesi_terakhir.id_lokasi = l.id
+
+    LEFT JOIN (
+      SELECT
+        id_lokasi,
+        MAX(tanggal_selesai) AS terakhir_opname
+      FROM stok_opname
+      WHERE
+        status = 'selesai'
+        AND tanggal_selesai IS NOT NULL
+      GROUP BY id_lokasi
+    ) riwayat_opname
+      ON riwayat_opname.id_lokasi = l.id
 
     WHERE sl.jumlah > 0
   `;
@@ -52,31 +95,36 @@ const getLokasiUntukStokOpname = async (search, kategori) => {
       l.id,
       l.nama_lokasi,
       l.kategori,
-      l.kategori_lainnya
+      l.kategori_lainnya,
+      sesi_terakhir.id_opname,
+      sesi_terakhir.status,
+      riwayat_opname.terakhir_opname
 
     ORDER BY l.nama_lokasi ASC
   `;
 
   const [lokasi] = await db.query(query, params);
 
-  // Memastikan angka dikirim sebagai number, bukan string
   return lokasi.map((item) => ({
     ...item,
+    id_opname:
+      item.id_opname === null ? null : Number(item.id_opname),
     jumlah_jenis_barang: Number(item.jumlah_jenis_barang),
     jumlah_data_stok: Number(item.jumlah_data_stok),
     total_unit: Number(item.total_unit),
   }));
 };
 
-
 // Membuat sesi Stok Opname baru
 const createSesiStokOpname = async (idLokasi, nipPengguna) => {
   const connection = await db.getConnection();
+  let transaksiAktif = false;
 
   try {
     await connection.beginTransaction();
+    transaksiAktif = true;
 
-    // 1. Periksa apakah ruangan tersedia
+    // 1. Periksa lokasi dan kunci baris lokasi selama transaksi
     const [lokasiRows] = await connection.query(
       `SELECT id, nama_lokasi
        FROM lokasi
@@ -93,42 +141,53 @@ const createSesiStokOpname = async (idLokasi, nipPengguna) => {
 
     const lokasi = lokasiRows[0];
 
+    // 2. Periksa apakah masih ada sesi yang belum selesai
     const [sesiAktifRows] = await connection.query(
       `SELECT id_opname, status
        FROM stok_opname
-       WHERE id_lokasi = ? 
-        AND status IN ('draft', 'berlangsung')
-       LIMIT 1`,
-       [idLokasi]
+       WHERE id_lokasi = ?
+         AND status IN ('draft', 'berlangsung')
+       ORDER BY id_opname DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [idLokasi]
     );
 
     if (sesiAktifRows.length > 0) {
-        const error = new Error(
-            "Masih ada sesi stok opname yang belum selesai untuk lokasi ini."
-        );
-        error.code = "LOKASI_HAS_ACTIVE_SESSION";
-        error.idOpname = sesiAktifRows[0].id_opname;
-        throw error;
+      const error = new Error(
+        "Masih ada sesi Stok Opname yang belum selesai untuk lokasi ini."
+      );
+
+      error.code = "LOKASI_HAS_ACTIVE_SESSION";
+      error.idOpname = sesiAktifRows[0].id_opname;
+
+      throw error;
     }
 
-    // 2. Ambil ID pengguna yang sedang login
+    // Sesi sebelumnya berstatus selesai tidak menghalangi sesi baru.
+
+    // 3. Ambil ID pengguna yang sedang login
     const [userRows] = await connection.query(
       `SELECT id
        FROM users
-       WHERE nip = ? AND is_active = 1
+       WHERE nip = ?
+         AND is_active = 1
        LIMIT 1`,
       [nipPengguna]
     );
 
     if (userRows.length === 0) {
-      const error = new Error("Pengguna tidak ditemukan atau tidak aktif.");
+      const error = new Error(
+        "Pengguna tidak ditemukan atau tidak aktif."
+      );
+
       error.code = "USER_NOT_FOUND";
       throw error;
     }
 
     const idUser = userRows[0].id;
 
-    // 3. Ambil seluruh stok pada ruangan yang dipilih
+    // 4. Ambil stok terkini pada lokasi yang dipilih
     const [stokRows] = await connection.query(
       `SELECT
          id_stok,
@@ -142,16 +201,16 @@ const createSesiStokOpname = async (idLokasi, nipPengguna) => {
       [idLokasi]
     );
 
-    // Ruangan harus memiliki inventaris
     if (stokRows.length === 0) {
       const error = new Error(
         "Ruangan ini belum memiliki inventaris untuk diperiksa."
       );
+
       error.code = "EMPTY_LOCATION";
       throw error;
     }
 
-    // 4. Buat sesi Stok Opname
+    // 5. Buat sesi Stok Opname baru
     const [opnameResult] = await connection.query(
       `INSERT INTO stok_opname (
          id_lokasi,
@@ -163,7 +222,7 @@ const createSesiStokOpname = async (idLokasi, nipPengguna) => {
 
     const idOpname = opnameResult.insertId;
 
-    // 5. Simpan snapshot setiap catatan stok
+    // 6. Simpan snapshot stok terkini sebagai detail sesi baru
     for (const stok of stokRows) {
       await connection.query(
         `INSERT INTO stok_opname_detail (
@@ -181,8 +240,9 @@ const createSesiStokOpname = async (idLokasi, nipPengguna) => {
       );
     }
 
-    // 6. Simpan seluruh perubahan jika berhasil
+    // 7. Simpan transaksi
     await connection.commit();
+    transaksiAktif = false;
 
     return {
       id_opname: idOpname,
@@ -192,19 +252,16 @@ const createSesiStokOpname = async (idLokasi, nipPengguna) => {
       status: "berlangsung",
       jumlah_data_stok: stokRows.length,
     };
-
   } catch (error) {
-    // Batalkan semua perubahan jika terjadi kesalahan
-    await connection.rollback();
-    throw error;
+    if (transaksiAktif) {
+      await connection.rollback();
+    }
 
+    throw error;
   } finally {
-    // Kembalikan koneksi ke connection pool
     connection.release();
   }
 };
-
-
 
 const getDataKelompokSesi = async (idOpname) => {
   // 1. Ambil informasi sesi
@@ -230,12 +287,6 @@ const getDataKelompokSesi = async (idOpname) => {
   }
 
   const sesi = sesiRows[0];
-
-  if (sesi.status === "selesai") {
-    const error = new Error("Sesi stok opname sudah selesai.");
-    error.code = "SESI_SELESAI";
-    throw error;
-  }
 
   // 2. Ambil seluruh detail stok dalam sesi
   const [rows] = await db.query(
@@ -677,8 +728,6 @@ const saveHasilPemeriksaan = async (
     connection.release();
   }
 };
-
-
 
 const getRingkasanSesi = async (idOpname) => {
   const hasil = await getDataKelompokSesi(idOpname);
