@@ -8,6 +8,9 @@ const authRoutes = require("./routes/auth.routes");
 const lokasiRoutes = require("./routes/lokasi.routes");
 const asetRoutes = require("./routes/aset.routes");
 const stokOpnameRoutes = require("./routes/stokOpname.routes");
+const perpindahanAsetRoutes = require("./routes/perpindahanAset.routes");
+const peminjamanRoutes = require("./routes/peminjaman.routes");
+const pengembalianRoutes = require("./routes/pengembalian.routes");
 
 const { authenticate } = require("./middlewares/auth.middleware");
 const { authorize } = require("./middlewares/role.middleware");
@@ -56,6 +59,29 @@ const authorizeAset = (req, res, next) => {
     message: "Anda tidak memiliki akses ke modul Master Inventaris.",
   });
 };
+
+// Modul Perpindahan Aset hanya untuk Sarpras
+app.use(
+  "/perpindahan-aset",
+  authenticate,
+  authorize("Wakasek Sarpras"),
+  perpindahanAsetRoutes
+);
+
+// Modul Peminjaman hanya untuk Sarpras dan TU
+app.use(
+  "/peminjaman",
+  authenticate,
+  authorize("Wakasek Sarpras", "Tata Usaha"),
+  peminjamanRoutes
+);
+
+app.use(
+  "/pengembalian",
+  authenticate,
+  authorize("Wakasek Sarpras", "Tata Usaha"),
+  pengembalianRoutes
+);
 
 app.use(
   "/aset",
