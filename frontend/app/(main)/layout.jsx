@@ -33,11 +33,6 @@ const NAVIGASI = [
         url: "/master-inventaris",
         ikon: Package,
       },
-    ],
-  },
-  {
-    judul: "OPERASIONAL & LOGISTIK",
-    menu: [
       {
         nama: "Stok Opname",
         url: "/stok-opname",
@@ -53,11 +48,6 @@ const NAVIGASI = [
         url: "/peminjaman",
         ikon: Handshake,
       },
-    ],
-  },
-  {
-    judul: "LAPORAN & KEAMANAN",
-    menu: [
       {
         nama: "Riwayat Aktivitas",
         url: "/riwayat-aktivitas",
@@ -155,40 +145,39 @@ function MainLayoutContent({ children }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
       <div className="flex min-h-screen">
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+        {/* SIDEBAR DESKTOP */}
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen">
+          {/* LOGO */}
+          <Link
+            href="/dashboard"
+            className="flex h-[88px] shrink-0 items-center gap-3 border-b border-slate-100 px-5"
+          >
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+              <Image
+                src="/logo.svg"
+                alt="Logo SIMA"
+                width={40}
+                height={40}
+                className="h-full w-full object-contain"
+                priority
+              />
+            </div>
 
-        {/* LOGO DI SIDEBAR */}
-        <Link
-          href="/dashboard"
-          className="flex h-[88px] shrink-0 items-center gap-3 border-b border-slate-100 px-5"
-        >
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-            <Image
-              src="/logo.svg"
-              alt="Logo SIMA SMAN 1 Bojonggede"
-              width={40}
-              height={40}
-              className="h-full w-full object-contain"
-              priority
-            />
-          </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-extrabold text-blue-700">SIMA</p>
+              <p className="mt-1 text-[10px] leading-4 text-slate-500">
+                Sistem Manajemen Inventaris
+              </p>
+            </div>
+          </Link>
 
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-extrabold text-blue-700">
-              SIMA SMAN 1 Bojonggede
-            </p>
-            <p className="mt-1 text-[10px] text-slate-500">
-              Sistem Manajemen Aset
-            </p>
-          </div>
-        </Link>
-
+          {/* NAVIGASI */}
           <nav className="flex-1 space-y-7 overflow-y-auto px-3 py-6">
             {renderNavigasi()}
           </nav>
 
           <div className="shrink-0 border-t border-slate-100 p-4 text-[10px] text-slate-400">
-            SIMA SMAN 1 Bojonggede · Inventaris
+            SIMA · Sistem Manajemen Inventaris
           </div>
         </aside>
 
@@ -207,7 +196,7 @@ function MainLayoutContent({ children }) {
               </button>
             </div>
 
-            {/* PROFIL*/}
+            {/* PROFIL */}
             <div className="flex shrink-0 items-center gap-2">
               <Link
                 href="/profile"
@@ -241,23 +230,23 @@ function MainLayoutContent({ children }) {
 
           {/* MENU MOBILE */}
           {mobileMenuOpen && (
-            <div className="fixed inset-0 top-[88px] z-40 bg-black/20 lg:hidden">
-              <div className="flex h-full w-72 max-w-[85vw] flex-col border-r border-slate-200 bg-white">
+            <div className="fixed inset-0 top-[88px] z-40 bg-slate-900/40 backdrop-blur-[2px] lg:hidden">
+              <button
+                type="button"
+                className="absolute inset-0 cursor-default"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Tutup menu navigasi"
+              />
+
+              <div className="relative z-10 flex h-full w-72 max-w-[85vw] flex-col border-r border-slate-200 bg-white shadow-2xl">
                 <nav className="flex-1 space-y-7 overflow-y-auto px-3 py-6">
                   {renderNavigasi()}
                 </nav>
 
                 <div className="border-t border-slate-100 p-4 text-[10px] text-slate-400">
-                  SIMA SMAN 1 Bojonggede · Inventaris
+                  SIMA · Sistem Manajemen Inventaris
                 </div>
               </div>
-
-              <button
-                type="button"
-                className="absolute inset-0 -z-10 cursor-default"
-                onClick={() => setMobileMenuOpen(false)}
-                aria-label="Tutup menu navigasi"
-              />
             </div>
           )}
 
