@@ -10,7 +10,32 @@ const getAllAset = async (search, kategori, lokasiId) => {
       b.nama_barang,
       b.kategori,
       COALESCE(SUM(sl.jumlah), 0) AS total_jumlah,
-      COUNT(DISTINCT sl.id_lokasi) AS total_lokasi
+      COUNT(DISTINCT sl.id_lokasi) AS total_lokasi,
+
+      (
+        COALESCE(
+          (
+            SELECT SUM(sl_aktif.jumlah)
+            FROM stok_lokasi sl_aktif
+            JOIN pengadaan_barang pb_aktif
+              ON sl_aktif.id_pengadaan = pb_aktif.id_pengadaan
+            WHERE pb_aktif.id_barang = b.id_barang
+              AND sl_aktif.status_penggunaan = 'aktif'
+          ),
+          0
+        )
+        -
+        COALESCE(
+          (
+            SELECT SUM(p.jumlah_pinjam)
+            FROM peminjaman p
+            WHERE p.id_barang = b.id_barang
+              AND p.status = 'dipinjam'
+          ),
+          0
+        )
+      ) AS stok_tersedia
+
     FROM barang b
 
     LEFT JOIN pengadaan_barang pb
