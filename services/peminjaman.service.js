@@ -1,4 +1,3 @@
-
 const db = require("../config/database");
 
 // Mengambil seluruh data peminjaman
@@ -203,8 +202,13 @@ const createPeminjaman = async (data, idUser) => {
         return tanggal;
     };
 
-    const formatJam = (value, namaField) => {
+    const formatJam = (value, namaField, opsional = false) => {
         const jam = String(value || "").trim();
+
+        // Jam kosong berarti akhir hari
+        if (!jam && opsional) {
+            return "23:59:59";
+        }
 
         if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(jam)) {
             throw new Error(
@@ -221,7 +225,7 @@ const createPeminjaman = async (data, idUser) => {
 
     const batasPengembalian =
         `${formatTanggal(batas_pengembalian, "Tanggal pengembalian")} ` +
-        `${formatJam(jam_batas_pengembalian, "Jam pengembalian")}`;
+        `${formatJam(jam_batas_pengembalian, "Jam pengembalian", true)}`;
 
     if (batasPengembalian <= tanggalPinjam) {
         throw new Error(

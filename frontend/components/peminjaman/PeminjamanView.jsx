@@ -15,6 +15,7 @@ import {
   filterPeminjaman,
   urutkanPeminjaman,
 } from "@/lib/peminjaman/utils";
+import PerpindahanAsetHeader from "@/components/perpindahan-aset/PerpindahanAsetHeader";
 import PeminjamanRingkasan from "./PeminjamanRingkasan";
 import PeminjamanTabel from "./PeminjamanTabel";
 import PeminjamanPagination from "./PeminjamanPagination";
@@ -27,7 +28,7 @@ export default function PeminjamanView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Tab aktif: "dipinjam" | "dikembalikan"
+  // Tab aktif
   const [tab, setTab] = useState("dipinjam");
 
   // Filter & urutan
@@ -50,6 +51,7 @@ export default function PeminjamanView() {
   const loadData = useCallback(async (signal) => {
     setLoading(true);
     setError("");
+
     try {
       const data = await getDaftarPeminjaman(signal);
       setDaftar(data);
@@ -63,13 +65,16 @@ export default function PeminjamanView() {
 
   useEffect(() => {
     const controller = new AbortController();
+
     loadData(controller.signal);
+
     return () => controller.abort();
   }, [loadData]);
 
   // Kunci scroll ketika drawer terbuka
   useEffect(() => {
     const isOpen = drawerPeminjaman || drawerPengembalian;
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
       document.documentElement.style.overflow = "hidden";
@@ -77,6 +82,7 @@ export default function PeminjamanView() {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
     }
+
     return () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
@@ -86,7 +92,9 @@ export default function PeminjamanView() {
   // Sembunyikan notice setelah 4 detik
   useEffect(() => {
     if (!notice) return;
+
     const timer = setTimeout(() => setNotice(""), 4000);
+
     return () => clearTimeout(timer);
   }, [notice]);
 
@@ -95,10 +103,10 @@ export default function PeminjamanView() {
     setPage(1);
   }, [query, kategori, urutan, tab]);
 
-  // Hitung ringkasan dari seluruh daftar (bukan hanya yang difilter)
+  // Hitung ringkasan dari seluruh daftar
   const ringkasan = useMemo(() => hitungRingkasan(daftar), [daftar]);
 
-  // Jumlah per tab (badge)
+  // Jumlah per tab
   const jumlahDipinjam = useMemo(
     () => daftar.filter((p) => p.status === "dipinjam").length,
     [daftar]
@@ -111,7 +119,12 @@ export default function PeminjamanView() {
 
   // Data setelah filter dan urutan
   const dataFiltered = useMemo(() => {
-    const filtered = filterPeminjaman(daftar, { query, kategori, tab });
+    const filtered = filterPeminjaman(daftar, {
+      query,
+      kategori,
+      tab,
+    });
+
     return urutkanPeminjaman(filtered, urutan);
   }, [daftar, query, kategori, tab, urutan]);
 
@@ -130,163 +143,167 @@ export default function PeminjamanView() {
 
   async function setelahBerhasil(pesan) {
     setNotice(pesan);
+
     const controller = new AbortController();
     await loadData(controller.signal);
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 md:p-8">
-      {/* BREADCRUMB */}
-      <nav className="mb-4 flex items-center gap-1 text-xs text-slate-400">
-        <span>SIM Sarpras</span>
-        <span className="mx-1">›</span>
-        <span className="font-medium text-slate-600">
-          Peminjaman & Pengembalian Aset
-        </span>
-      </nav>
+    <div className="min-h-full bg-[#f7f9fc]">
+      <div className="mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-7">
+        {/* Header Halaman */}
+        <PerpindahanAsetHeader
+          judul="Peminjaman & Pengembalian Sarana Prasarana"
+          deskripsi="Pencatatan sirkulasi unit peralatan sekolah untuk seluruh warga sekolah."
+          aksi={
+            <button
+              type="button"
+              onClick={() => setDrawerPeminjaman(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+            >
+              <Plus size={16} />
+              Catat Peminjaman Baru
+            </button>
+          }
+        />
 
-      {/* HEADER */}
-      <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Logistik Peminjaman & Pengembalian Sarpras
-          </h1>
-          <p className="mt-2 max-w-2xl text-xs leading-6 text-slate-500">
-            Pencatatan sirkulasi unit peralatan sekolah untuk guru, staf tata
-            usaha, dan perwakilan OSIS/MPK.
-          </p>
-        </div>
+        {/* Notifikasi Sukses */}
+        {notice && (
+          <div className="mt-5">
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">
+              <CheckSquare size={15} />
+              {notice}
+            </div>
+          </div>
+        )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setDrawerPengembalian(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-          >
-            <CheckSquare size={15} />
-            Catat Pengembalian Aset
-          </button>
+        {/* Error Global */}
+        {error && (
+          <div className="mt-5 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
+            <AlertCircle size={15} />
+            <span>{error}</span>
 
-          <button
-            type="button"
-            onClick={() => setDrawerPeminjaman(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
-          >
-            <Plus size={15} />
-            Catat Peminjaman Baru
-          </button>
-        </div>
-      </div>
+            <button
+              type="button"
+              onClick={() => loadData()}
+              className="ml-auto inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+            >
+              <RefreshCw size={14} />
+              Coba Lagi
+            </button>
+          </div>
+        )}
 
-      {/* NOTIFIKASI */}
-      {notice && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">
-          <CheckSquare size={15} />
-          {notice}
-        </div>
-      )}
+        {/* Ringkasan Statistik */}
+        <section
+          aria-label="Ringkasan statistik peminjaman"
+          className="mt-6"
+        >
+          <PeminjamanRingkasan
+            ringkasan={ringkasan}
+            loading={loading}
+          />
+        </section>
 
-      {/* ERROR GLOBAL */}
-      {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
-          <AlertCircle size={15} />
-          {error}
-          <button
-            type="button"
-            onClick={() => loadData()}
-            className="ml-auto inline-flex items-center gap-1 rounded border border-red-300 px-2 py-1 text-[11px] hover:bg-red-100"
-          >
-            <RefreshCw size={11} />
-            Coba lagi
-          </button>
-        </div>
-      )}
+        {/* Daftar Transaksi */}
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-bold text-slate-900 sm:text-lg">
+              Daftar Transaksi
+            </h2>
+          </div>
 
-      {/* KARTU RINGKASAN */}
-      <PeminjamanRingkasan ringkasan={ringkasan} loading={loading} />
-
-      {/* TABEL TRANSAKSI */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        {/* TAB */}
-        <div className="flex gap-0 border-b border-slate-200 px-4">
-          <button
-            type="button"
-            onClick={() => setTab("dipinjam")}
-            className={`inline-flex items-center gap-2 border-b-2 py-3.5 pr-5 text-xs font-semibold transition-colors ${
-              tab === "dipinjam"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <ClipboardList size={15} strokeWidth={1.8} />
-            Sedang Dipinjam
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+          {/* Tab Transaksi */}
+          <div className="mt-4 flex gap-0 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setTab("dipinjam")}
+              className={`inline-flex items-center gap-2 border-b-2 py-3.5 pr-5 text-xs font-semibold transition-colors ${
                 tab === "dipinjam"
-                  ? "bg-blue-100 text-blue-700"
-                  : "bg-slate-100 text-slate-500"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
-              {loading ? "..." : jumlahDipinjam}
-            </span>
-          </button>
+              <ClipboardList size={15} strokeWidth={1.8} />
+              Sedang Dipinjam
 
-          <button
-            type="button"
-            onClick={() => setTab("dikembalikan")}
-            className={`inline-flex items-center gap-2 border-b-2 py-3.5 pr-5 text-xs font-semibold transition-colors ${
-              tab === "dikembalikan"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <History size={15} strokeWidth={1.8} />
-            Riwayat Dikembalikan
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  tab === "dipinjam"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                {loading ? "..." : jumlahDipinjam}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab("dikembalikan")}
+              className={`inline-flex items-center gap-2 border-b-2 py-3.5 pr-5 text-xs font-semibold transition-colors ${
                 tab === "dikembalikan"
-                  ? "bg-blue-100 text-blue-700"
-                  : "bg-slate-100 text-slate-500"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
-              {loading ? "..." : jumlahDikembalikan}
-            </span>
-          </button>
-        </div>
+              <History size={15} strokeWidth={1.8} />
+              Riwayat Dikembalikan
 
-        {/* FILTER BAR */}
-        <PeminjamanFilterBar
-          query={query}
-          onQueryChange={setQuery}
-          kategori={kategori}
-          onKategoriChange={setKategori}
-          urutan={urutan}
-          onUrutanChange={setUrutan}
-          onHapusFilter={hapusFilter}
-        />
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  tab === "dikembalikan"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                {loading ? "..." : jumlahDikembalikan}
+              </span>
+            </button>
+          </div>
 
-        {/* TABEL */}
-        <PeminjamanTabel
-          data={dataHalaman}
-          loading={loading}
-          tab={tab}
-        />
+          {/* Filter Bar */}
+          <div className="mt-4">
+            <PeminjamanFilterBar
+              query={query}
+              onQueryChange={setQuery}
+              kategori={kategori}
+              onKategoriChange={setKategori}
+              urutan={urutan}
+              onUrutanChange={setUrutan}
+              onHapusFilter={hapusFilter}
+            />
+          </div>
 
-        {/* PAGINATION */}
-        <PeminjamanPagination
-          total={dataFiltered.length}
-          page={page}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
-          label={tab === "dipinjam" ? "Transaksi Peminjaman" : "Transaksi Pengembalian"}
-        />
+          {/* Tabel Transaksi */}
+          <div className="mt-5">
+            <PeminjamanTabel
+              data={dataHalaman}
+              loading={loading}
+              tab={tab}
+            />
+          </div>
+
+          {/* Pagination */}
+          <PeminjamanPagination
+            total={dataFiltered.length}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            label={
+              tab === "dipinjam"
+                ? "Transaksi Peminjaman"
+                : "Transaksi Pengembalian"
+            }
+          />
+        </section>
       </div>
 
-      {/* DRAWER PEMINJAMAN */}
+      {/* Drawer Peminjaman */}
       <DrawerPeminjaman
         open={drawerPeminjaman}
         onClose={() => setDrawerPeminjaman(false)}
@@ -296,11 +313,13 @@ export default function PeminjamanView() {
         }}
       />
 
-      {/* DRAWER PENGEMBALIAN */}
+      {/* Drawer Pengembalian */}
       <DrawerPengembalian
         open={drawerPengembalian}
         onClose={() => setDrawerPengembalian(false)}
-        daftarPeminjaman={daftar.filter((p) => p.status === "dipinjam")}
+        daftarPeminjaman={daftar.filter(
+          (p) => p.status === "dipinjam"
+        )}
         onBerhasil={(pesan) => {
           setDrawerPengembalian(false);
           setelahBerhasil(pesan);

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   ArrowLeft,
   CheckSquare,
@@ -10,10 +9,6 @@ import {
   RefreshCw,
   Clock,
   CheckCircle2,
-  Circle,
-  MapPin,
-  User,
-  FileText,
   Loader2,
 } from "lucide-react";
 import { getDetailPeminjaman } from "@/lib/peminjaman/api";
@@ -22,15 +17,12 @@ import {
   formatJam,
   formatTanggalJam,
   formatTanggalPendek,
-  labelStatus,
   labelKategoriBarang,
   labelKategoriPeminjam,
 } from "@/lib/peminjaman/utils";
 import DrawerPengembalian from "./DrawerPengembalian";
 
-// ============================
-// BADGE STATUS
-// ============================
+// Badge status transaksi
 function BadgeStatus({ status }) {
   if (status === "dipinjam") {
     return (
@@ -40,6 +32,7 @@ function BadgeStatus({ status }) {
       </span>
     );
   }
+
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
       <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -50,6 +43,7 @@ function BadgeStatus({ status }) {
 
 function BadgeKategoriBarang({ kategori }) {
   const label = labelKategoriBarang(kategori);
+
   return (
     <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
       {label}
@@ -57,22 +51,21 @@ function BadgeKategoriBarang({ kategori }) {
   );
 }
 
-// ============================
-// INFO ROW
-// ============================
+// Informasi detail
 function InfoRow({ label, value }) {
   if (value === null || value === undefined || value === "") return null;
+
   return (
     <div className="flex items-start justify-between gap-6 border-b border-slate-50 py-2.5 last:border-0">
       <span className="shrink-0 text-xs text-slate-400">{label}</span>
-      <span className="text-right text-xs font-medium text-slate-800">{value}</span>
+      <span className="text-right text-xs font-medium text-slate-800">
+        {value}
+      </span>
     </div>
   );
 }
 
-// ============================
-// TIMELINE
-// ============================
+// Timeline transaksi
 function TimelineItem({ selesai, aktif, judul, deskripsi, ikon: Ikon }) {
   let warnaBulat, warnaGaris, warnaJudul, warnaDesc;
 
@@ -95,26 +88,28 @@ function TimelineItem({ selesai, aktif, judul, deskripsi, ikon: Ikon }) {
 
   return (
     <div className="flex gap-4">
-      {/* Bulat dan garis */}
       <div className="flex flex-col items-center">
-        <div className={`flex h-8 w-8 items-center justify-center rounded-full ${warnaBulat} shrink-0`}>
+        <div
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${warnaBulat}`}
+        >
           <Ikon size={15} className="text-white" strokeWidth={2} />
         </div>
+
         <div className={`mt-1 h-full w-0.5 ${warnaGaris}`} />
       </div>
 
-      {/* Konten */}
       <div className="pb-7 pt-1">
         <p className={`text-sm ${warnaJudul}`}>{judul}</p>
-        {deskripsi && <p className={`mt-0.5 text-xs ${warnaDesc}`}>{deskripsi}</p>}
+
+        {deskripsi && (
+          <p className={`mt-0.5 text-xs ${warnaDesc}`}>{deskripsi}</p>
+        )}
       </div>
     </div>
   );
 }
 
-// ============================
-// DETAIL VIEW
-// ============================
+// Detail peminjaman
 export default function DetailPeminjamanView({ idPeminjaman }) {
   const router = useRouter();
 
@@ -129,12 +124,18 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
     async (signal) => {
       setLoading(true);
       setError("");
+
       try {
         const data = await getDetailPeminjaman(idPeminjaman, signal);
-        if (!data) throw new Error("Data peminjaman tidak ditemukan.");
+
+        if (!data) {
+          throw new Error("Data peminjaman tidak ditemukan.");
+        }
+
         setDetail(data);
       } catch (err) {
         if (err?.name === "AbortError") return;
+
         setError(err.message || "Gagal mengambil detail transaksi.");
       } finally {
         setLoading(false);
@@ -145,13 +146,17 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
 
   useEffect(() => {
     const controller = new AbortController();
+
     loadDetail(controller.signal);
+
     return () => controller.abort();
   }, [loadDetail]);
 
   useEffect(() => {
     if (!notice) return;
+
     const timer = setTimeout(() => setNotice(""), 4000);
+
     return () => clearTimeout(timer);
   }, [notice]);
 
@@ -164,6 +169,7 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
     }
+
     return () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
@@ -173,13 +179,13 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
   async function setelahPengembalian(pesan) {
     setDrawerPengembalian(false);
     setNotice(pesan);
+
     const controller = new AbortController();
+
     await loadDetail(controller.signal);
   }
 
-  // ============================
-  // LOADING
-  // ============================
+  // Loading
   if (loading) {
     return (
       <div className="mx-auto w-full max-w-[1500px] p-4 md:p-8">
@@ -191,22 +197,28 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
     );
   }
 
-  // ============================
-  // ERROR
-  // ============================
+  // Error
   if (error) {
     return (
       <div className="mx-auto w-full max-w-[1500px] p-4 md:p-8">
-        <Link
-          href="/peminjaman"
-          className="mb-6 inline-flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-700"
+        <button
+          type="button"
+          onClick={() => router.push("/peminjaman")}
+          className="mb-5 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-blue-600"
         >
-          <ArrowLeft size={14} />
-          Kembali ke daftar
-        </Link>
+          <ArrowLeft size={16} />
+          Kembali ke Riwayat Peminjaman
+        </button>
+
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
-          <AlertCircle size={36} className="mx-auto mb-3 text-red-300" strokeWidth={1.5} />
+          <AlertCircle
+            size={36}
+            className="mx-auto mb-3 text-red-300"
+            strokeWidth={1.5}
+          />
+
           <p className="text-sm font-semibold text-red-700">{error}</p>
+
           <button
             type="button"
             onClick={() => loadDetail()}
@@ -226,19 +238,6 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] p-4 md:p-8">
-      {/* BREADCRUMB */}
-      <nav className="mb-4 flex items-center gap-1 text-xs text-slate-400">
-        <Link href="/peminjaman" className="hover:text-slate-600">
-          SIM Sarpras
-        </Link>
-        <span className="mx-1">›</span>
-        <Link href="/peminjaman" className="hover:text-slate-600">
-          Peminjaman & Pengembalian Aset
-        </Link>
-        <span className="mx-1">›</span>
-        <span className="font-medium text-slate-600">Detail Transaksi</span>
-      </nav>
-
       {/* NOTICE */}
       {notice && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700">
@@ -251,13 +250,14 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           {/* Tombol kembali */}
-          <Link
-            href="/peminjaman"
-            className="mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-600"
+          <button
+            type="button"
+            onClick={() => router.push("/peminjaman")}
+            className="mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-blue-600"
           >
-            <ArrowLeft size={13} />
-            Kembali ke daftar
-          </Link>
+            <ArrowLeft size={16} />
+            Kembali ke Riwayat Peminjaman
+          </button>
 
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             {detail.nama_barang}
@@ -267,17 +267,19 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
             <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-600">
               #{detail.kode_transaksi}
             </span>
+
             <BadgeKategoriBarang kategori={detail.kategori_barang} />
+
             <BadgeStatus status={detail.status} />
           </div>
         </div>
 
-        {/* Tombol Catat Pengembalian — hanya jika masih dipinjam */}
+        {/* Tombol Catat Pengembalian */}
         {!sudahDikembalikan && (
           <button
             type="button"
             onClick={() => setDrawerPengembalian(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
           >
             <CheckSquare size={15} />
             Catat Pengembalian
@@ -296,35 +298,66 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
 
             <div className="space-y-0.5">
               <InfoRow label="Nama Barang" value={detail.nama_barang} />
-              <InfoRow label="Kategori Barang" value={labelKategoriBarang(detail.kategori_barang)} />
-              <InfoRow label="Jumlah Barang" value={`${detail.jumlah_pinjam} Unit`} />
-              <InfoRow label="Nama Peminjam" value={detail.nama_peminjam} />
+
+              <InfoRow
+                label="Kategori Barang"
+                value={labelKategoriBarang(detail.kategori_barang)}
+              />
+
+              <InfoRow
+                label="Jumlah Barang"
+                value={`${detail.jumlah_pinjam} Unit`}
+              />
+
+              <InfoRow
+                label="Nama Peminjam"
+                value={detail.nama_peminjam}
+              />
+
               <InfoRow
                 label="Kategori Peminjam"
                 value={labelKategoriPeminjam(detail)}
               />
-              {detail.kategori_peminjam === "Lainnya" && detail.kategori_peminjam_lainnya && (
+
+              {detail.kategori_peminjam === "Lainnya" &&
+                detail.kategori_peminjam_lainnya && (
+                  <InfoRow
+                    label="Keterangan Kategori"
+                    value={detail.kategori_peminjam_lainnya}
+                  />
+                )}
+
+              {detail.nomor_surat && (
                 <InfoRow
-                  label="Keterangan Kategori"
-                  value={detail.kategori_peminjam_lainnya}
+                  label="Nomor Surat"
+                  value={detail.nomor_surat}
                 />
               )}
-              {detail.nomor_surat && (
-                <InfoRow label="Nomor Surat" value={detail.nomor_surat} />
-              )}
+
               <InfoRow label="Keperluan" value={detail.keperluan} />
-              <InfoRow label="Lokasi Penggunaan" value={detail.lokasi_pakai} />
+
+              <InfoRow
+                label="Lokasi Penggunaan"
+                value={detail.lokasi_pakai}
+              />
+
               <InfoRow
                 label="Tanggal & Jam Pinjam"
                 value={formatTanggalJam(detail.tanggal_pinjam)}
               />
+
               <InfoRow
                 label="Batas Pengembalian"
                 value={`${formatTanggal(detail.batas_pengembalian)}, ${formatJam(detail.batas_pengembalian)} WIB`}
               />
+
               {detail.nama_petugas && (
-                <InfoRow label="Dicatat Oleh" value={detail.nama_petugas} />
+                <InfoRow
+                  label="Dicatat Oleh"
+                  value={detail.nama_petugas}
+                />
               )}
+
               {sudahDikembalikan && detail.tanggal_pengembalian && (
                 <InfoRow
                   label="Waktu Pengembalian"
@@ -349,7 +382,9 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
                 aktif={false}
                 ikon={CheckCircle2}
                 judul="Peminjaman Dicatat"
-                deskripsi={formatTanggal(detail.tanggal_pinjam || detail.created_at)}
+                deskripsi={formatTanggal(
+                  detail.tanggal_pinjam || detail.created_at
+                )}
               />
 
               {/* Tahap 2: Menunggu Pengembalian */}
@@ -369,7 +404,7 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
               <div className="flex gap-4">
                 <div className="flex flex-col items-center">
                   <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                       sudahDikembalikan
                         ? "bg-emerald-500 ring-4 ring-emerald-100"
                         : "bg-slate-200 ring-4 ring-slate-50"
@@ -382,6 +417,7 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
                     />
                   </div>
                 </div>
+
                 <div className="pt-1">
                   <p
                     className={`text-sm ${
@@ -392,6 +428,7 @@ export default function DetailPeminjamanView({ idPeminjaman }) {
                   >
                     Barang Telah Dikembalikan
                   </p>
+
                   {sudahDikembalikan && detail.tanggal_pengembalian ? (
                     <p className="mt-0.5 text-xs text-slate-500">
                       {formatTanggalJam(detail.tanggal_pengembalian)}
