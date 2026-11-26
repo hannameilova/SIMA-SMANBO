@@ -19,8 +19,10 @@ body {
   font-family: var(--font-plus-jakarta), Arial, Helvetica, sans-serif;
 }
 
-input:focus,
-button:focus-visible {
-  outline: 2px solid #93c5fd;
-  outline-offset: 2px;
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: #2563eb !important;
 }
