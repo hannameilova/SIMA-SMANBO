@@ -295,11 +295,11 @@ export default function RiwayatPerpindahanView() {
           <RingkasanPerpindahan statistik={statistik} loading={loading} />
         </section>
 
-        {/* Bagian Riwayat Perpindahan Terkini */}
+        {/* Bagian Riwayat Perpindahan*/}
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-bold text-slate-900 sm:text-lg">
-              Riwayat Perpindahan Terkini
+              Riwayat Perpindahan
             </h2>
           </div>
 
