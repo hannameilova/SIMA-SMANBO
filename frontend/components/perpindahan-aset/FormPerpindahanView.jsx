@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  ArrowLeft,
   Check,
   Info,
   Loader2,
@@ -13,7 +14,6 @@ import {
 import { apiRequest } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import AksiNotification from "@/components/stok-opname/AksiNotification";
-import PerpindahanAsetHeader from "@/components/perpindahan-aset/PerpindahanAsetHeader";
 import SearchableBarangSelect from "@/components/perpindahan-aset/SearchableBarangSelect";
 import SearchableLokasiSelect from "@/components/perpindahan-aset/SearchableLokasiSelect";
 import PilihKelompokStok from "@/components/perpindahan-aset/PilihKelompokStok";
@@ -567,14 +567,17 @@ export default function FormPerpindahanView() {
   return (
     <div className="min-h-full bg-[#f7f9fc]">
       <div className="mx-auto w-full max-w-[1160px] px-4 py-6 md:px-8 md:py-7">
-        {/* Header Breadcrumb */}
-        <PerpindahanAsetHeader
-          breadcrumbs={[
-            { label: "Operasional & Logistik" },
-            { label: "Perpindahan Aset", href: "/perpindahan-aset" },
-            { label: "Catat Perpindahan Baru" },
-          ]}
-        />
+        {/* Tombol Kembali ke Riwayat Perpindahan */}
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => router.push("/perpindahan-aset")}
+            className="mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-blue-600"
+          >
+            <ArrowLeft size={16} />
+            Kembali ke Riwayat Perpindahan Aset
+          </button>
+        </div>
 
         {/* Error memuat data master */}
         {masterError && (
