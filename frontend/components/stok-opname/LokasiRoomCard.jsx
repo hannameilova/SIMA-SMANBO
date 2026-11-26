@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -67,7 +66,7 @@ function IkonRuangan({ room }) {
     return <Settings className="h-5 w-5" strokeWidth={1.9} />;
   }
 
-  if (teks.includes("lab") || teks.includes("ipa")) {
+  if (teks.includes("lab")) {
     return <FlaskConical className="h-5 w-5" strokeWidth={1.9} />;
   }
 

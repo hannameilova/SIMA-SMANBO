@@ -39,7 +39,7 @@ export default function LokasiSearchFilterBar({
             type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Cari nama ruangan"
+            placeholder="Cari nama ruangan..."
             className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-10 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 [&::-webkit-search-cancel-button]:hidden"
           />
           {search && (
@@ -55,20 +55,6 @@ export default function LokasiSearchFilterBar({
         </div>
 
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:flex md:shrink-0">
-          <div className="relative min-w-0 md:w-44 lg:w-48">
-            <label htmlFor="filter-gedung-opname" className="sr-only">
-              Filter gedung
-            </label>
-            <select
-              id="filter-gedung-opname"
-              value={selectedGedung}
-              onChange={(event) => onGedungChange(event.target.value)}
-              className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-3.5 pr-9 text-sm font-medium text-slate-600 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          </div>
-
           <div className="relative min-w-0 md:w-44 lg:w-48">
             <label htmlFor="filter-kategori-opname" className="sr-only">
               Filter kategori ruangan
